@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
+import FormField from "./FormField";
+import { inputClass } from "../utils/inputClass";
 
 const emptyFields = {
   first_name: "",
@@ -39,23 +41,6 @@ function validate(mode, fields) {
 
   return errors;
 }
-
-function FormField({ label, error, children }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-medium tracking-[0.14em] text-charcoal/70 uppercase">
-        {label}
-      </span>
-      {children}
-      {error && <span className="mt-1.5 block text-xs text-red-700">{error}</span>}
-    </label>
-  );
-}
-
-const inputClass = (hasError) =>
-  `w-full border bg-cream px-4 py-3 text-sm text-ink placeholder:text-charcoal/40 focus:outline-none ${
-    hasError ? "border-red-400 focus:border-red-500" : "border-sand-dark focus:border-gold"
-  }`;
 
 export default function AuthCard() {
   const auth = useAuth();

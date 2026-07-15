@@ -1,11 +1,17 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import AuthCard from "../components/AuthCard";
 
 export default function AuthPage() {
   const { isAuthenticated, ready } = useAuth();
+  const location = useLocation();
 
-  if (ready && isAuthenticated) return <Navigate to="/home" replace />;
+  // Matches AuthCard's own post-login redirect so the two agree regardless
+  // of which one a login actually resolves through (this declarative check
+  // also covers arriving at /login while already signed in).
+  if (ready && isAuthenticated) {
+    return <Navigate to={location.state?.from?.pathname || "/home"} replace />;
+  }
 
   return (
     <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-ink px-5 py-16">

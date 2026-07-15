@@ -1,4 +1,4 @@
-import { testimonials } from "../data/products";
+import { testimonials } from "../data/marketing";
 import { StarIcon } from "./Icons";
 
 export default function Testimonials() {

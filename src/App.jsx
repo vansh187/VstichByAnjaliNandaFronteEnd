@@ -4,6 +4,7 @@ import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
 import CollectionPage from "./pages/CollectionPage";
+import CheckoutPage from "./pages/CheckoutPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
 import FloatingWhatsapp from "./components/FloatingWhatsapp";
@@ -30,7 +31,21 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/collections/:categoryId" element={<CollectionPage />} />
+        {/* keyed by path so switching categories remounts the page — a
+            clean useProducts/useCategories state (loading, items, cursor)
+            rather than trying to reset it mid-effect */}
+        <Route
+          path="/collections/:categoryId"
+          element={<CollectionPage key={location.pathname} />}
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <CheckoutPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
       {backgroundLocation && (

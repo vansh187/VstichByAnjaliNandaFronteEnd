@@ -33,6 +33,7 @@ export function CartProvider({ children }) {
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
+  const clearCart = useCallback(() => setItems([]), []);
 
   const { count, subtotal } = useMemo(
     () =>
@@ -58,6 +59,7 @@ export function CartProvider({ children }) {
       updateQty,
       openCart,
       closeCart,
+      clearCart,
     }),
     [
       items,
@@ -70,6 +72,7 @@ export function CartProvider({ children }) {
       updateQty,
       openCart,
       closeCart,
+      clearCart,
     ],
   );
 

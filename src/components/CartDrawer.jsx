@@ -1,13 +1,36 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useOverlay } from "../hooks/useOverlay";
 import { formatINR } from "../utils/format";
 import { BagIcon, CloseIcon, MinusIcon, PlusIcon, TrashIcon } from "./Icons";
 import Swatch from "./Swatch";
 
+function CartItemThumb({ item }) {
+  const [imgError, setImgError] = useState(false);
+  if (item.image && !imgError) {
+    return (
+      <img
+        src={item.image}
+        alt={item.name}
+        onError={() => setImgError(true)}
+        className="h-24 w-20 shrink-0 object-cover"
+      />
+    );
+  }
+  return <Swatch tone="from-sand-dark to-sand" className="h-24 w-20 shrink-0" />;
+}
+
 export default function CartDrawer() {
   const { items, isOpen, closeCart, count, subtotal, updateQty, removeItem } = useCart();
+  const navigate = useNavigate();
 
   useOverlay(isOpen, closeCart);
+
+  const goToCheckout = () => {
+    closeCart();
+    navigate("/checkout");
+  };
 
   return (
     <div
@@ -52,13 +75,19 @@ export default function CartDrawer() {
             <ul className="styled-scroll flex-1 overflow-y-auto px-6 py-4">
               {items.map((item) => (
                 <li key={item.id} className="flex gap-4 border-b border-sand-dark/70 py-5 first:pt-0">
-                  <Swatch
-                    tone={item.tone ?? "from-sand-dark to-sand"}
-                    className="h-24 w-20 shrink-0"
-                  />
+                  <CartItemThumb item={item} />
                   <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between gap-2">
-                      <h3 className="font-display text-base text-ink">{item.name}</h3>
+                      <div>
+                        <h3 className="font-display text-base text-ink">{item.name}</h3>
+                        {(item.size || item.color) && (
+                          <p className="mt-0.5 text-xs tracking-wide text-charcoal/60 uppercase">
+                            {[item.size && `Size ${item.size}`, item.color]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
@@ -106,6 +135,7 @@ export default function CartDrawer() {
               </div>
               <button
                 type="button"
+                onClick={goToCheckout}
                 className="w-full bg-ink py-4 text-sm font-medium tracking-[0.16em] text-cream uppercase transition-colors hover:bg-charcoal"
               >
                 Proceed to Checkout

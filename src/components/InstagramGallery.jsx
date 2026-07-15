@@ -1,4 +1,4 @@
-import { instagramTiles } from "../data/products";
+import { instagramTiles } from "../data/marketing";
 import Swatch from "./Swatch";
 import { InstagramIcon } from "./Icons";
 
