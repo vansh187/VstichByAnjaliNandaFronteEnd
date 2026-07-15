@@ -2,11 +2,18 @@
 // Swap the <img> markup in here for real assets at integration time.
 import { useId } from "react";
 
+const POSITION_CLASS_RE = /(^|\s)(absolute|fixed|sticky|static)(\s|$)/;
+
 export default function Swatch({ tone, className = "", monogram = "VN", children }) {
   const patternId = `weave-${useId()}`;
+  // Only fall back to `relative` when the caller hasn't supplied its own
+  // position utility — `relative` and `absolute` share specificity, so
+  // including both lets Tailwind's stylesheet order pick the winner instead
+  // of the caller's intent (breaks flex/grid layouts that expect `absolute`).
+  const needsPosition = !POSITION_CLASS_RE.test(className);
   return (
     <div
-      className={`relative overflow-hidden bg-gradient-to-br ${tone} ${className}`}
+      className={`${needsPosition ? "relative " : ""}overflow-hidden bg-gradient-to-br ${tone} ${className}`}
     >
       <svg
         className="absolute inset-0 h-full w-full opacity-[0.15] mix-blend-overlay"

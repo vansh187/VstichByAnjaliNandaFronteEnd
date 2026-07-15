@@ -4,6 +4,7 @@ import { CartContext } from "./cartContextObject";
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const addItem = useCallback((product) => {
     setItems((prev) => {
@@ -15,7 +16,7 @@ export function CartProvider({ children }) {
       }
       return [...prev, { ...product, qty: 1 }];
     });
-    setIsOpen(true);
+    setNotification({ key: Date.now(), name: product.name });
   }, []);
 
   const removeItem = useCallback((id) => {
@@ -51,13 +52,25 @@ export function CartProvider({ children }) {
       isOpen,
       count,
       subtotal,
+      notification,
       addItem,
       removeItem,
       updateQty,
       openCart,
       closeCart,
     }),
-    [items, isOpen, count, subtotal, addItem, removeItem, updateQty, openCart, closeCart],
+    [
+      items,
+      isOpen,
+      count,
+      subtotal,
+      notification,
+      addItem,
+      removeItem,
+      updateQty,
+      openCart,
+      closeCart,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

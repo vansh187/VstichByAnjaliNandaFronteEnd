@@ -3,9 +3,11 @@ import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
+import CollectionPage from "./pages/CollectionPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
 import FloatingWhatsapp from "./components/FloatingWhatsapp";
+import CartToast from "./components/CartToast";
 
 function App() {
   const location = useLocation();
@@ -28,6 +30,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/collections/:categoryId" element={<CollectionPage />} />
       </Routes>
 
       {backgroundLocation && (
@@ -38,6 +41,7 @@ function App() {
 
       <CartDrawer />
       <FloatingWhatsapp />
+      <CartToast />
     </>
   );
 }
