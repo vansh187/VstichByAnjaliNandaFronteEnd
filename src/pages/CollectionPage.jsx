@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
-import { getCategoryTone, getCategoryQuote } from "../utils/categoryTheme";
+import { getCategoryQuote } from "../utils/categoryTheme";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
@@ -11,7 +11,7 @@ import { ProductGridSkeleton } from "../components/Skeletons";
 import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
-import Swatch from "../components/Swatch";
+import CategoryVisual from "../components/CategoryVisual";
 import { ChevronRightIcon } from "../components/Icons";
 
 export default function CollectionPage() {
@@ -83,9 +83,8 @@ export default function CollectionPage() {
         {!categoriesLoading && !categoriesError && category && (
           <>
             <section className="relative flex h-[46svh] min-h-[340px] items-end overflow-hidden bg-ink text-cream">
-              <Swatch
-                tone={getCategoryTone(category.vstitch_category_id)}
-                monogram={category.category_name.slice(0, 2).toUpperCase()}
+              <CategoryVisual
+                category={category}
                 className="absolute inset-0 h-full w-full opacity-80"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />

@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
-import { getCategoryTone } from "../utils/categoryTheme";
 import { CategoryGridSkeleton } from "./Skeletons";
 import StateNotice from "./StateNotice";
-import Swatch from "./Swatch";
+import CategoryVisual from "./CategoryVisual";
 import { ChevronRightIcon } from "./Icons";
 
 export default function Categories() {
@@ -48,9 +47,8 @@ export default function Categories() {
               className="reveal group relative aspect-[3/4] overflow-hidden"
               style={{ transitionDelay: `${i * 90}ms` }}
             >
-              <Swatch
-                tone={getCategoryTone(cat.vstitch_category_id)}
-                monogram={cat.category_name.slice(0, 2).toUpperCase()}
+              <CategoryVisual
+                category={cat}
                 className="absolute inset-0 h-full w-full transition-transform duration-700 ease-out group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
