@@ -5,6 +5,7 @@ import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
 import CollectionPage from "./pages/CollectionPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import OrdersPage from "./pages/OrdersPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
 import FloatingWhatsapp from "./components/FloatingWhatsapp";
@@ -43,6 +44,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CheckoutPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <OrdersPage />
             </ProtectedRoute>
           }
         />

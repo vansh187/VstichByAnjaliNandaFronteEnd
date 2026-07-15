@@ -161,6 +161,13 @@ export default function Navbar() {
                 >
                   My Home
                 </Link>
+                <Link
+                  to="/orders"
+                  onClick={() => setMobileOpen(false)}
+                  className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+                >
+                  My Orders
+                </Link>
                 <button
                   type="button"
                   onClick={() => {

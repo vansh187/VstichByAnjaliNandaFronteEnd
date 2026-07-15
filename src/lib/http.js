@@ -65,8 +65,8 @@ async function request(path, { method = "GET", body, token, query } = {}) {
   return data;
 }
 
-export function get(path, query) {
-  return request(path, { method: "GET", query });
+export function get(path, query, token) {
+  return request(path, { method: "GET", query, token });
 }
 
 export function post(path, body, token) {

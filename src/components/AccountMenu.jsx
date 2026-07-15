@@ -57,6 +57,13 @@ export default function AccountMenu() {
           >
             My Home
           </Link>
+          <Link
+            to="/orders"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
+          >
+            My Orders
+          </Link>
           <button
             type="button"
             onClick={handleLogout}

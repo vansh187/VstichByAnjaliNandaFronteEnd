@@ -47,3 +47,7 @@ export function getBestSellers({ limit = 10 } = {}) {
 export function createOrder(payload, token) {
   return post("/orders", payload, token);
 }
+
+export function getOrders(token) {
+  return get("/orders", undefined, token);
+}
