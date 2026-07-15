@@ -155,13 +155,6 @@ export default function Navbar() {
             {isAuthenticated ? (
               <>
                 <Link
-                  to="/home"
-                  onClick={() => setMobileOpen(false)}
-                  className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
-                >
-                  My Home
-                </Link>
-                <Link
                   to="/orders"
                   onClick={() => setMobileOpen(false)}
                   className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"

@@ -51,13 +51,6 @@ export default function AccountMenu() {
             <span className="font-medium text-ink">{formatDisplayName(user?.username)}</span>
           </p>
           <Link
-            to="/home"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
-          >
-            My Home
-          </Link>
-          <Link
             to="/orders"
             onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
