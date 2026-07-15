@@ -1,21 +1,32 @@
-import { useProducts } from "../hooks/useProducts";
+import { useBestSellers } from "../hooks/useBestSellers";
 import { ProductGridSkeleton } from "./Skeletons";
 import StateNotice from "./StateNotice";
 import ProductCard from "./ProductCard";
 
-export default function Bestsellers() {
-  const { items, loading, error, reload } = useProducts({ inStockOnly: true, limit: 8 });
+const QUALIFYING_THRESHOLD = 3;
+
+// limit is exposed as a prop so this section can be resized (e.g. a wider
+// homepage layout or a dedicated "Best Sellers" page) without touching the
+// data layer — the API already supports 1-50 via the same query param.
+export default function Bestsellers({ limit = 10 }) {
+  const { items, qualifyingCount, loading, error, reload } = useBestSellers({ limit });
+
+  const isProvenBestSellers = qualifyingCount >= QUALIFYING_THRESHOLD;
+  const eyebrow = isProvenBestSellers ? "Handpicked For You" : "Fresh In";
+  const heading = isProvenBestSellers ? "Our Bestsellers" : "New Arrivals";
+
+  // Not enough sales history yet and no fallback items either — nothing
+  // worth showing, so skip the section rather than render an empty shell.
+  if (!loading && !error && items.length === 0) return null;
 
   return (
     <section id="bestsellers" className="bg-sand/60 py-24">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div data-reveal className="reveal mb-12 flex flex-col items-start gap-3">
           <span className="font-sans text-xs font-medium tracking-[0.3em] text-gold uppercase">
-            Handpicked For You
+            {eyebrow}
           </span>
-          <h2 className="font-display text-4xl text-ink sm:text-5xl">
-            Our Bestsellers
-          </h2>
+          <h2 className="font-display text-4xl text-ink sm:text-5xl">{heading}</h2>
         </div>
 
         {loading && <ProductGridSkeleton />}
@@ -26,13 +37,6 @@ export default function Bestsellers() {
             description={error}
             actionLabel="Try Again"
             onAction={reload}
-          />
-        )}
-
-        {!loading && !error && items.length === 0 && (
-          <StateNotice
-            title="Nothing to show yet"
-            description="Our bestsellers are being restocked — check back soon."
           />
         )}
 

@@ -40,6 +40,10 @@ export function getProductDetail(productId, { force = false } = {}) {
   return productDetailCache.get(productId);
 }
 
+export function getBestSellers({ limit = 10 } = {}) {
+  return get("/best-sellers", { limit });
+}
+
 export function createOrder(payload, token) {
   return post("/orders", payload, token);
 }
