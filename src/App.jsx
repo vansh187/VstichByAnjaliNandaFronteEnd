@@ -1,42 +1,44 @@
-import { CartProvider } from "./context/CartContext";
-import { useReveal } from "./hooks/useReveal";
-import AnnouncementBar from "./components/AnnouncementBar";
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import Categories from "./components/Categories";
-import Bestsellers from "./components/Bestsellers";
-import Features from "./components/Features";
-import Story from "./components/Story";
-import Testimonials from "./components/Testimonials";
-import InstagramGallery from "./components/InstagramGallery";
-import Newsletter from "./components/Newsletter";
-import Footer from "./components/Footer";
+import { Route, Routes, useLocation } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import AuthPage from "./pages/AuthPage";
+import AuthModal from "./pages/AuthModal";
+import HomePage from "./pages/HomePage";
+import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
 import FloatingWhatsapp from "./components/FloatingWhatsapp";
 
 function App() {
-  const revealRef = useReveal();
+  const location = useLocation();
+  const backgroundLocation = location.state?.backgroundLocation;
 
   return (
-    <CartProvider>
-      <div ref={revealRef}>
-        <AnnouncementBar />
-        <Navbar />
-        <main>
-          <Hero />
-          <Categories />
-          <Bestsellers />
-          <Features />
-          <Story />
-          <Testimonials />
-          <InstagramGallery />
-          <Newsletter />
-        </main>
-        <Footer />
-        <CartDrawer />
-        <FloatingWhatsapp />
-      </div>
-    </CartProvider>
+    <>
+      {/* When navigated to with a backgroundLocation (e.g. clicking "Log In" from
+          the landing/home page), the underlying page keeps rendering here so the
+          login modal below can overlay it. Direct/refresh visits to /login fall
+          back to the full-page AuthPage since there's no page to show behind it. */}
+      <Routes location={backgroundLocation || location}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+
+      {backgroundLocation && (
+        <Routes>
+          <Route path="/login" element={<AuthModal />} />
+        </Routes>
+      )}
+
+      <CartDrawer />
+      <FloatingWhatsapp />
+    </>
   );
 }
 

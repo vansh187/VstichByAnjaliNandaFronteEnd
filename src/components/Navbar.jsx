@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import { useOverlay } from "../hooks/useOverlay";
-import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
+import AccountMenu from "./AccountMenu";
+import { BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 
 const navLinks = [
   { label: "Shop", href: "#bestsellers" },
@@ -12,7 +15,9 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const { isAuthenticated, logout } = useAuth();
   const { count, openCart } = useCart();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -44,12 +49,12 @@ export default function Navbar() {
           <MenuIcon />
         </button>
 
-        <a
-          href="#top"
+        <Link
+          to="/"
           className="mx-auto font-display text-2xl tracking-wide text-ink lg:mx-0 sm:text-3xl"
         >
           VStitch <span className="italic text-gold">by Anjali Nanda</span>
-        </a>
+        </Link>
 
         <nav className="hidden items-center gap-9 lg:flex">
           {navLinks.map((link) => (
@@ -72,13 +77,7 @@ export default function Navbar() {
           >
             <SearchIcon />
           </button>
-          <button
-            type="button"
-            aria-label="Account"
-            className="hidden transition-colors hover:text-gold sm:inline-flex"
-          >
-            <UserIcon />
-          </button>
+          <AccountMenu />
           <button
             type="button"
             aria-label={`Open cart, ${count} items`}
@@ -153,6 +152,36 @@ export default function Navbar() {
                 {link.label}
               </a>
             ))}
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/home"
+                  onClick={() => setMobileOpen(false)}
+                  className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+                >
+                  My Home
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setMobileOpen(false);
+                  }}
+                  className="py-3 text-left font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+                >
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                state={{ backgroundLocation: location }}
+                onClick={() => setMobileOpen(false)}
+                className="py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+              >
+                Log In
+              </Link>
+            )}
           </nav>
         </div>
       </div>
