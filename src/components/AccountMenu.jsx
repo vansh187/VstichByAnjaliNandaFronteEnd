@@ -20,7 +20,7 @@ export default function AccountMenu() {
         to="/login"
         state={{ backgroundLocation: location }}
         aria-label="Log in"
-        className="hidden transition-colors hover:text-gold sm:inline-flex"
+        className="inline-flex transition-colors hover:text-gold"
       >
         <UserIcon />
       </Link>
@@ -34,7 +34,7 @@ export default function AccountMenu() {
   };
 
   return (
-    <div ref={menuRef} className="relative hidden sm:inline-flex">
+    <div ref={menuRef} className="relative inline-flex">
       <button
         type="button"
         aria-label="Account menu"

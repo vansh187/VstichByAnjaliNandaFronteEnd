@@ -36,7 +36,7 @@ export default function Navbar() {
           : "border-transparent bg-cream"
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-5 py-4 sm:px-8">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-5 py-4 sm:px-8">
         <button
           type="button"
           className="flex items-center gap-2 text-ink lg:hidden"
@@ -48,7 +48,7 @@ export default function Navbar() {
 
         <Link
           to="/"
-          className="mr-auto font-display text-2xl tracking-wide text-ink sm:text-3xl"
+          className="mr-auto min-w-0 flex-1 font-display text-lg leading-tight tracking-wide text-ink sm:text-3xl"
         >
           VStitch <span className="italic text-gold">by Anjali Nanda</span>
         </Link>
@@ -65,7 +65,7 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="ml-4 flex items-center gap-4 text-ink sm:gap-5">
+        <div className="ml-auto flex items-center gap-3 text-ink sm:gap-5">
           <button
             type="button"
             aria-label="Search"
