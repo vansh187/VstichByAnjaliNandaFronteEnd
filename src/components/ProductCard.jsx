@@ -105,7 +105,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
 
   return (
     <article data-reveal className="reveal" style={{ transitionDelay: `${transitionDelay}ms` }}>
-      <div className="relative aspect-[3/4] overflow-hidden">
+      <div className="relative aspect-[5/6] overflow-hidden">
         {product.primary_image_url && !imgError ? (
           <img
             src={product.primary_image_url}
@@ -128,15 +128,15 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
         )}
       </div>
 
-      <div className="mt-4">
-        <p className="text-[11px] tracking-[0.14em] text-charcoal/60 uppercase">
+      <div className="mt-2 space-y-1.5">
+        <p className="text-[9px] tracking-[0.14em] text-charcoal/60 uppercase">
           {product.category_name}
         </p>
-        <h3 className="mt-1 font-display text-lg text-ink">{product.product_name}</h3>
-        <p className="mt-1.5 font-medium text-ink">{priceLabel}</p>
+        <h3 className="font-display text-sm text-ink leading-tight">{product.product_name}</h3>
+        <p className="font-medium text-xs text-ink">{priceLabel}</p>
 
         {product.available_colors?.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Color">
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Color">
             {product.available_colors.map((color) => (
               <button
                 key={color}
@@ -145,7 +145,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
                 aria-label={color}
                 aria-pressed={selectedColor === color}
                 onClick={() => selectColor(color)}
-                className={`h-5 w-5 rounded-full border transition-all ${
+                className={`h-3.5 w-3.5 rounded-full border transition-all ${
                   selectedColor === color
                     ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-cream"
                     : "border-sand-dark hover:border-charcoal"
@@ -162,7 +162,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
             onChange={(e) => setManualSize(e.target.value)}
             disabled={detailLoading || variantsForColor.length === 0}
             aria-label="Size"
-            className="mt-3 w-full border border-sand-dark bg-cream px-3 py-2 text-xs uppercase tracking-widest text-ink focus:border-gold focus:outline-none disabled:opacity-60"
+            className="w-full border border-sand-dark bg-cream px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-ink focus:border-gold focus:outline-none disabled:opacity-60"
           >
             {detailLoading && <option value="">Loading sizes…</option>}
             {!detailLoading && variantsForColor.length === 0 && (
@@ -195,7 +195,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           type="button"
           onClick={handleAdd}
           disabled={!canAddToCart}
-          className={`mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-xs font-medium tracking-[0.14em] uppercase transition-colors ${
+          className={`flex w-full items-center justify-center gap-2 py-1.5 text-[10px] font-medium tracking-[0.14em] uppercase transition-colors ${
             added
               ? "bg-gold text-ink"
               : "bg-ink text-cream hover:bg-charcoal disabled:cursor-not-allowed disabled:bg-sand-dark disabled:text-charcoal/60"

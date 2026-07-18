@@ -2,13 +2,72 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
+import { useProducts } from "../hooks/useProducts";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
-import CategoryVisual from "../components/CategoryVisual";
+import ProductCard from "../components/ProductCard";
 import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
-import { ChevronRightIcon } from "../components/Icons";
+import { ProductGridSkeleton } from "../components/Skeletons";
+
+function CategoryProductsSection({ category, index }) {
+  const { items, loading, error, reload } = useProducts({
+    categoryId: category.vstitch_category_id,
+    limit: 24,
+  });
+
+  return (
+    <section
+      data-reveal
+      className="reveal rounded-[1.5rem] border border-sand-dark/70 bg-cream p-6 shadow-sm sm:p-8"
+      style={{ transitionDelay: `${index * 80}ms` }}
+    >
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] tracking-[0.24em] text-charcoal/60 uppercase">Collection</p>
+          <h2 className="mt-1 font-display text-2xl text-ink">{category.category_name}</h2>
+        </div>
+        <Link
+          to={`/collections/${category.vstitch_category_id}`}
+          className="text-sm font-medium tracking-[0.16em] text-gold uppercase transition-colors hover:text-ink"
+        >
+          View Collection
+        </Link>
+      </div>
+
+      {loading && <ProductGridSkeleton />}
+
+      {!loading && error && (
+        <StateNotice
+          title="Couldn't load products"
+          description={error}
+          actionLabel="Try Again"
+          onAction={reload}
+        />
+      )}
+
+      {!loading && !error && items.length === 0 && (
+        <StateNotice
+          title="No products yet"
+          description="New pieces are being added to this collection soon."
+        />
+      )}
+
+      {!loading && !error && items.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {items.map((product, productIndex) => (
+            <ProductCard
+              key={product.vstitch_product_id}
+              product={product}
+              transitionDelay={productIndex * 70}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function CollectionsPage() {
   const revealRef = useReveal();
@@ -31,11 +90,11 @@ export default function CollectionsPage() {
                 Collections
               </p>
               <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-                Discover heirloom-inspired pieces by category
+                Browse every collection with its full range of pieces
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-cream/80">
-                Browse each curated collection to explore signature silhouettes, refined colors,
-                and carefully crafted sizes with easy add-to-cart selection.
+                Each category section below shows the products available for that collection,
+                including colors, sizes, and add-to-cart options.
               </p>
             </div>
             <div className="rounded-full border border-cream/20 bg-cream/10 px-4 py-2 text-sm tracking-[0.2em] text-cream/80 uppercase backdrop-blur-sm">
@@ -46,12 +105,22 @@ export default function CollectionsPage() {
 
         <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8">
           {loading && (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
+            <div className="space-y-8">
+              {Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={index}
-                  className="aspect-[3/4] animate-pulse rounded-2xl bg-sand-dark/50"
-                />
+                  className="rounded-[1.5rem] border border-sand-dark/70 bg-cream p-6 sm:p-8"
+                >
+                  <div className="h-8 w-48 animate-pulse rounded bg-sand-dark/50" />
+                  <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {Array.from({ length: 3 }).map((_, cardIndex) => (
+                      <div
+                        key={cardIndex}
+                        className="aspect-[3/4] animate-pulse rounded-2xl bg-sand-dark/50"
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -73,34 +142,9 @@ export default function CollectionsPage() {
           )}
 
           {!loading && !error && categories.length > 0 && (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-8">
               {categories.map((cat, index) => (
-                <Link
-                  key={cat.vstitch_category_id}
-                  to={`/collections/${cat.vstitch_category_id}`}
-                  data-reveal
-                  className="reveal group overflow-hidden rounded-[1.75rem] border border-sand-dark/70 bg-cream"
-                  style={{ transitionDelay: `${index * 80}ms` }}
-                >
-                  <div className="relative aspect-[4/5] overflow-hidden">
-                    <CategoryVisual
-                      category={cat}
-                      className="absolute inset-0 h-full w-full transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
-                      <div>
-                        <p className="text-[11px] tracking-[0.24em] text-cream/75 uppercase">
-                          Collection
-                        </p>
-                        <h2 className="mt-1 font-display text-2xl text-cream">{cat.category_name}</h2>
-                      </div>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream/15 text-cream backdrop-blur-sm transition-transform duration-300 group-hover:translate-x-1">
-                        <ChevronRightIcon />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                <CategoryProductsSection key={cat.vstitch_category_id} category={cat} index={index} />
               ))}
             </div>
           )}
