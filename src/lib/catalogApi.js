@@ -48,6 +48,10 @@ export function createOrder(payload, token) {
   return post("/orders", payload, token);
 }
 
+export function createRazorpayOrder(payload, token) {
+  return post("/payments/orders", payload, token);
+}
+
 export function getOrders(token) {
   return get("/orders", undefined, token);
 }
