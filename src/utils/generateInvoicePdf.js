@@ -36,7 +36,11 @@ export async function generateInvoicePdf(order) {
 
     y += 18;
     doc.text(`Payment Method: ${String(order.payment_method ?? "-").toUpperCase()}`, marginX, y);
-    doc.text(`Date: ${new Date().toLocaleString("en-IN")}`, 320, y);
+    doc.text(
+      `Date: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`,
+      320,
+      y,
+    );
 
     if (order.shipping) {
       y += 28;

@@ -51,13 +51,25 @@ function formatCurrency(value) {
   }).format(amount);
 }
 
-function formatDate(value) {
-  if (!value) return "—";
+// The backend returns naive timestamps with no timezone designator (e.g.
+// "2026-07-18T11:48:05.605785") that are actually UTC. Without an explicit
+// "Z"/offset, JS Date parses that string as local time instead of UTC,
+// silently shifting the displayed time by the viewer's UTC offset. Treat it
+// as UTC explicitly, then always render in IST regardless of the viewer's
+// own timezone.
+function parseServerDate(value) {
+  if (!value) return null;
+  const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(value);
+  const date = new Date(hasTimezone ? value : `${value}Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+function formatDate(value) {
+  const date = parseServerDate(value);
+  if (!date) return value || "—";
 
   return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
     day: "numeric",
     month: "short",
     year: "numeric",
