@@ -69,18 +69,18 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-medium tracking-[0.2em] text-gold-light uppercase">Get in Touch</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-cream/70">
-              <li>Atelier: A-42, Defence Colony, New Delhi 110024, India</li>
+              <li>Atelier: C-87, First Floor, Sushant Lok-1, Sector 43, Gurugram, 122002</li>
               <li>
-                <a href="tel:+911145678900" className="link-underline transition-colors hover:text-cream">
-                  +91 11 4567 8900
+                <a href="tel:+919953149142" className="link-underline transition-colors hover:text-cream">
+                  +91 99531 49142
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:hello@vstitchbyanjalinanda.com"
+                  href="mailto:vstitchbyanjalinanda@gmail.com"
                   className="link-underline transition-colors hover:text-cream"
                 >
-                  hello@vstitchbyanjalinanda.com
+                  vstitchbyanjalinanda@gmail.com
                 </a>
               </li>
               <li>Mon–Sat, 10am – 7pm IST</li>
