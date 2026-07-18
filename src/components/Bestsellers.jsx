@@ -54,7 +54,7 @@ export default function Bestsellers({ limit = 10 }) {
 
         <div data-reveal className="reveal mt-14 flex justify-center">
           <a
-            href="#categories"
+            href="/collections"
             className="border border-ink px-9 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-ink hover:text-cream"
           >
             View Full Collection

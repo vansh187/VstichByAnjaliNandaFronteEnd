@@ -28,7 +28,7 @@ const slides = [
     subtitle:
       "Zardozi, mirror-work and hand embroidery — heirlooms cut and stitched for your big day.",
     cta: "Explore Bridal Lehengas",
-    href: "#categories",
+    href: "/collections",
   },
   {
     image: "https://picsum.photos/id/106/1800/1000",
@@ -50,7 +50,7 @@ const slides = [
     subtitle:
       "Contemporary silhouettes rooted in Indian craft — for the woman who wears both worlds well.",
     cta: "Shop Indo-Western",
-    href: "#categories",
+    href: "/collections",
   },
 ];
 
