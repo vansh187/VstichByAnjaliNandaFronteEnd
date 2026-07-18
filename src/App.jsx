@@ -3,7 +3,9 @@ import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
+import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
+import StoryPage from "./pages/StoryPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrdersPage from "./pages/OrdersPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -35,10 +37,12 @@ function App() {
         {/* keyed by path so switching categories remounts the page — a
             clean useProducts/useCategories state (loading, items, cursor)
             rather than trying to reset it mid-effect */}
+        <Route path="/collections" element={<CollectionsPage />} />
         <Route
           path="/collections/:categoryId"
           element={<CollectionPage key={location.pathname} />}
         />
+        <Route path="/our-story" element={<StoryPage />} />
         <Route
           path="/checkout"
           element={

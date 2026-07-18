@@ -7,11 +7,8 @@ import AccountMenu from "./AccountMenu";
 import { BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 
 const navLinks = [
-  { label: "Shop", href: "#bestsellers" },
-  { label: "Collections", href: "#categories" },
-  { label: "Our Story", href: "#story" },
-  { label: "Journal", href: "#testimonials" },
-  { label: "Contact", href: "#newsletter" },
+  { label: "Collections", href: "/collections" },
+  { label: "Our Story", href: "/our-story" },
 ];
 
 export default function Navbar() {
@@ -39,7 +36,7 @@ export default function Navbar() {
           : "border-transparent bg-cream"
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+      <div className="mx-auto flex max-w-7xl items-center gap-4 px-5 py-4 sm:px-8">
         <button
           type="button"
           className="flex items-center gap-2 text-ink lg:hidden"
@@ -51,24 +48,24 @@ export default function Navbar() {
 
         <Link
           to="/"
-          className="mx-auto font-display text-2xl tracking-wide text-ink lg:mx-0 sm:text-3xl"
+          className="mr-auto font-display text-2xl tracking-wide text-ink sm:text-3xl"
         >
           VStitch <span className="italic text-gold">by Anjali Nanda</span>
         </Link>
 
-        <nav className="hidden items-center gap-9 lg:flex">
+        <nav className="hidden flex-1 items-center justify-end gap-6 lg:flex lg:ml-8">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
-              href={link.href}
+              to={link.href}
               className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-4 text-ink sm:gap-5">
+        <div className="ml-4 flex items-center gap-4 text-ink sm:gap-5">
           <button
             type="button"
             aria-label="Search"
@@ -143,14 +140,14 @@ export default function Navbar() {
           </div>
           <nav className="flex flex-col gap-1 px-5 py-6">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
-                href={link.href}
+                to={link.href}
                 onClick={() => setMobileOpen(false)}
                 className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             {isAuthenticated ? (
               <>
