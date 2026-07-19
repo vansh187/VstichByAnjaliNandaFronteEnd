@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../hooks/useAuth";
 import { API_BASE_URL } from "../lib/apiConfig";
-import { getOrders } from "../lib/catalogApi";
+import { getOrders, getOrderTracking } from "../lib/catalogApi";
 
 const PAGE_SIZE = 10;
+// Re-poll live tracking for visible, non-terminal orders at this cadence
+// while the page stays open — a card's status can change without a reload.
+const TRACKING_POLL_INTERVAL_MS = 45000;
 
 function getStatusMeta(status) {
   const normalized = String(status ?? "")
@@ -23,7 +26,7 @@ function getStatusMeta(status) {
     return { label: "Out for Delivery", rank: 3, tone: "bg-sky-100 text-sky-800" };
   }
 
-  if (normalized.includes("ship")) {
+  if (normalized.includes("ship") || normalized.includes("transit") || normalized.includes("pickup") || normalized.includes("pickedup")) {
     return { label: "Shipped", rank: 2, tone: "bg-violet-100 text-violet-800" };
   }
 
@@ -170,7 +173,14 @@ function normalizeOrders(payload) {
 
   return source
     .map((order, index) => {
-      const statusMeta = getStatusMeta(order?.status ?? order?.order_status);
+      const awbCode = order?.awb_code ?? order?.awbCode ?? null;
+      let statusMeta = getStatusMeta(order?.status ?? order?.order_status);
+      // A DB status of "Placed" with an AWB already assigned is further
+      // along than a plain placed order (no shipment yet) — surface that
+      // distinction even before any live tracking data comes back.
+      if (statusMeta.rank === 1 && awbCode) {
+        statusMeta = { label: "Shipment Created", rank: 1.5, tone: "bg-sky-100 text-sky-800" };
+      }
       const createdAt = getCreatedAt(order);
 
       const lineItems =
@@ -190,10 +200,16 @@ function normalizeOrders(payload) {
           .join(", ");
 
       return {
-        id: order?.id ?? order?.order_id ?? order?.orderNumber ?? `order-${index + 1}`,
-        orderNumber: order?.order_number ?? order?.orderNumber ?? order?.id ?? `#${index + 1}`,
+        id: order?.vstitch_order_id ?? order?.id ?? order?.order_id ?? order?.orderNumber ?? `order-${index + 1}`,
+        orderNumber:
+          order?.order_number ??
+          order?.orderNumber ??
+          order?.vstitch_order_id ??
+          order?.id ??
+          `#${index + 1}`,
         status: order?.status ?? order?.order_status ?? "Placed",
         statusMeta,
+        awbCode,
         createdAt,
         total: order?.total ?? order?.total_amount ?? order?.amount ?? order?.grand_total ?? null,
         itemSummary: itemSummary || "Products available",
@@ -211,12 +227,24 @@ function normalizeOrders(payload) {
     });
 }
 
+// Pulls the current live status out of the tracking payload shape documented
+// for GET /orders/{id}/tracking: an array whose single entry is keyed by
+// shipment id, wrapping a `tracking_data.shipment_track[0].current_status`.
+function extractLiveStatus(response) {
+  const entry = Array.isArray(response) ? response[0] : null;
+  const shipment = entry ? Object.values(entry)[0] : null;
+  const status = shipment?.tracking_data?.shipment_track?.[0]?.current_status;
+  return status ? String(status).trim() : "";
+}
+
 export default function OrdersPage() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [trackingByOrderId, setTrackingByOrderId] = useState({});
+  const trackingInFlightRef = useRef(new Set());
 
   useEffect(() => {
     let active = true;
@@ -254,6 +282,61 @@ export default function OrdersPage() {
 
   const visibleOrders = useMemo(() => orders.slice(0, visibleCount), [orders, visibleCount]);
   const hasMore = orders.length > visibleCount;
+
+  // Live per-card tracking overlay: the list call above only reflects the
+  // DB's stored status (updated by Shiprocket's webhook), so poll the
+  // tracking endpoint for whatever's on screen and merge in a more granular
+  // status when Shiprocket has one. Orders not yet shipped return 409 —
+  // that's expected, not an error, so we just keep the DB label for them.
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const trackableIds = visibleOrders
+      .filter((order) => order.statusMeta.rank < 4)
+      .map((order) => order.id);
+
+    if (trackableIds.length === 0) return undefined;
+
+    let active = true;
+
+    async function fetchTracking(orderId) {
+      if (trackingInFlightRef.current.has(orderId)) return;
+      trackingInFlightRef.current.add(orderId);
+
+      try {
+        const response = await getOrderTracking(orderId, token);
+        if (!active) return;
+        const liveStatus = extractLiveStatus(response);
+        // A shipment/AWB exists on essentially every order right after
+        // placement (auto-created server-side), so a 200 response by itself
+        // isn't a meaningful signal — only a real scan (non-empty
+        // current_status) means the order actually moved.
+        setTrackingByOrderId((prev) => ({
+          ...prev,
+          [orderId]: liveStatus ? { statusMeta: getStatusMeta(liveStatus) } : prev[orderId] ?? null,
+        }));
+      } catch (err) {
+        // 409 = not shipped yet, anything else = transient upstream issue.
+        // Either way, fall back silently to the DB status already shown.
+        if (!active) return;
+        if (err?.status !== 409) {
+          setTrackingByOrderId((prev) => ({ ...prev, [orderId]: prev[orderId] ?? null }));
+        }
+      } finally {
+        trackingInFlightRef.current.delete(orderId);
+      }
+    }
+
+    trackableIds.forEach(fetchTracking);
+    const interval = setInterval(() => {
+      trackableIds.forEach(fetchTracking);
+    }, TRACKING_POLL_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [visibleOrders, token]);
 
   return (
     <div className="min-h-screen bg-cream text-charcoal">
@@ -293,7 +376,11 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {visibleOrders.map((order) => (
+            {visibleOrders.map((order) => {
+              const liveStatusMeta = trackingByOrderId[order.id]?.statusMeta;
+              const displayStatusMeta = liveStatusMeta ?? order.statusMeta;
+
+              return (
               <article
                 key={order.id}
                 className="rounded-[1.5rem] border border-sand-dark/70 bg-white p-5 shadow-sm"
@@ -320,8 +407,8 @@ export default function OrdersPage() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-3">
                         <h2 className="font-display text-xl text-ink">{order.orderNumber}</h2>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${order.statusMeta.tone}`}>
-                          {order.statusMeta.label}
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${displayStatusMeta.tone}`}>
+                          {displayStatusMeta.label}
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-charcoal/70">
@@ -339,7 +426,8 @@ export default function OrdersPage() {
                   </div>
                 </div>
               </article>
-            ))}
+              );
+            })}
 
             {hasMore && (
               <div className="flex justify-center">

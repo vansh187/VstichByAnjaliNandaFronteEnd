@@ -55,3 +55,7 @@ export function createRazorpayOrder(payload, token) {
 export function getOrders(token) {
   return get("/orders", undefined, token);
 }
+
+export function getOrderTracking(orderId, token) {
+  return get(`/orders/${orderId}/tracking`, undefined, token);
+}
