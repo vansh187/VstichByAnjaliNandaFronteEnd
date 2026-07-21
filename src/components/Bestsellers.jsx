@@ -3,7 +3,9 @@ import { ProductGridSkeleton } from "./Skeletons";
 import StateNotice from "./StateNotice";
 import ProductCard from "./ProductCard";
 
-const QUALIFYING_THRESHOLD = 3;
+// Exported so Hero's own "Shop Bestsellers"/"Shop New Arrivals" CTA label
+// stays in sync with the same rule this section uses to pick its heading.
+export const QUALIFYING_THRESHOLD = 3;
 
 // limit is exposed as a prop so this section can be resized (e.g. a wider
 // homepage layout or a dedicated "Best Sellers" page) without touching the
