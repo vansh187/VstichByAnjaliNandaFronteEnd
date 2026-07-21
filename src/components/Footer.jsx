@@ -1,16 +1,16 @@
-import {
-  FacebookIcon,
-  InstagramIcon,
-  PinterestIcon,
-  WhatsappIcon,
-} from "./Icons";
+import { Link } from "react-router-dom";
+import { useCategories } from "../hooks/useCategories";
+import { InstagramIcon, WhatsappIcon } from "./Icons";
 
-const shopLinks = ["Sarees", "Suits & Sets", "Bridal Lehengas", "Indo-Western", "New Arrivals", "Sale"];
-const helpLinks = ["Track Your Order", "Shipping Policy", "Returns & Exchanges", "Size Guide", "FAQs", "Care Instructions"];
+const helpLinks = [
+  { label: "Track Your Order", to: "/track-order" },
+  { label: "FAQs", to: "/faqs" },
+];
 const companyLinks = ["Our Story", "The Atelier", "Careers", "Press", "Sustainability", "Terms of Service", "Privacy Policy"];
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { categories } = useCategories();
 
   return (
     <footer className="border-t border-sand-dark bg-ink text-cream">
@@ -28,12 +28,6 @@ export default function Footer() {
               <a href="#" aria-label="Instagram" className="text-cream/70 transition-colors hover:text-gold-light">
                 <InstagramIcon />
               </a>
-              <a href="#" aria-label="Facebook" className="text-cream/70 transition-colors hover:text-gold-light">
-                <FacebookIcon />
-              </a>
-              <a href="#" aria-label="Pinterest" className="text-cream/70 transition-colors hover:text-gold-light">
-                <PinterestIcon />
-              </a>
               <a href="#" aria-label="WhatsApp" className="text-cream/70 transition-colors hover:text-gold-light">
                 <WhatsappIcon />
               </a>
@@ -43,11 +37,14 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-medium tracking-[0.2em] text-gold-light uppercase">Shop</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-cream/70">
-              {shopLinks.map((link) => (
-                <li key={link}>
-                  <a href="#bestsellers" className="link-underline transition-colors hover:text-cream">
-                    {link}
-                  </a>
+              {categories.map((category) => (
+                <li key={category.vstitch_category_id}>
+                  <Link
+                    to={`/collections/${category.vstitch_category_id}`}
+                    className="link-underline transition-colors hover:text-cream"
+                  >
+                    {category.category_name}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -56,13 +53,21 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-medium tracking-[0.2em] text-gold-light uppercase">Customer Care</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-cream/70">
-              {helpLinks.map((link) => (
-                <li key={link}>
-                  <a href="#" className="link-underline transition-colors hover:text-cream">
-                    {link}
-                  </a>
-                </li>
-              ))}
+              {helpLinks.map((link) =>
+                link.to === "#" ? (
+                  <li key={link.label}>
+                    <a href="#" className="link-underline transition-colors hover:text-cream">
+                      {link.label}
+                    </a>
+                  </li>
+                ) : (
+                  <li key={link.label}>
+                    <Link to={link.to} className="link-underline transition-colors hover:text-cream">
+                      {link.label}
+                    </Link>
+                  </li>
+                ),
+              )}
             </ul>
           </div>
 

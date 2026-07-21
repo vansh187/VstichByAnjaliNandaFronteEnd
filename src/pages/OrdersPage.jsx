@@ -6,40 +6,12 @@ import Navbar from "../components/Navbar";
 import { useAuth } from "../hooks/useAuth";
 import { API_BASE_URL } from "../lib/apiConfig";
 import { getOrders, getOrderTracking } from "../lib/catalogApi";
+import { getStatusMeta, extractTrackingDetails } from "../utils/tracking";
 
 const PAGE_SIZE = 10;
 // Re-poll live tracking for visible, non-terminal orders at this cadence
 // while the page stays open — a card's status can change without a reload.
 const TRACKING_POLL_INTERVAL_MS = 45000;
-
-function getStatusMeta(status) {
-  const normalized = String(status ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[_\s-]+/g, "");
-
-  if (normalized.includes("deliv") || normalized === "completed") {
-    return { label: "Delivered", rank: 4, tone: "bg-emerald-100 text-emerald-800" };
-  }
-
-  if (normalized.includes("out") || normalized.includes("delivery")) {
-    return { label: "Out for Delivery", rank: 3, tone: "bg-sky-100 text-sky-800" };
-  }
-
-  if (normalized.includes("ship") || normalized.includes("transit") || normalized.includes("pickup") || normalized.includes("pickedup")) {
-    return { label: "Shipped", rank: 2, tone: "bg-violet-100 text-violet-800" };
-  }
-
-  if (normalized.includes("fail") || normalized.includes("cancel")) {
-    return { label: "Failed", rank: 5, tone: "bg-rose-100 text-rose-800" };
-  }
-
-  if (normalized.includes("pend") || normalized.includes("process") || normalized.includes("confirm")) {
-    return { label: "Placed", rank: 1, tone: "bg-amber-100 text-amber-800" };
-  }
-
-  return { label: "Placed", rank: 1, tone: "bg-amber-100 text-amber-800" };
-}
 
 function formatCurrency(value) {
   if (value === null || value === undefined || value === "") return "—";
@@ -227,16 +199,6 @@ function normalizeOrders(payload) {
     });
 }
 
-// Pulls the current live status out of the tracking payload shape documented
-// for GET /orders/{id}/tracking: an array whose single entry is keyed by
-// shipment id, wrapping a `tracking_data.shipment_track[0].current_status`.
-function extractLiveStatus(response) {
-  const entry = Array.isArray(response) ? response[0] : null;
-  const shipment = entry ? Object.values(entry)[0] : null;
-  const status = shipment?.tracking_data?.shipment_track?.[0]?.current_status;
-  return status ? String(status).trim() : "";
-}
-
 export default function OrdersPage() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -306,7 +268,7 @@ export default function OrdersPage() {
       try {
         const response = await getOrderTracking(orderId, token);
         if (!active) return;
-        const liveStatus = extractLiveStatus(response);
+        const liveStatus = extractTrackingDetails(response).currentStatus;
         // A shipment/AWB exists on essentially every order right after
         // placement (auto-created server-side), so a 200 response by itself
         // isn't a meaningful signal — only a real scan (non-empty
