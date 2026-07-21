@@ -7,3 +7,7 @@ export function signup(payload) {
 export function login(payload) {
   return post("/login", payload);
 }
+
+export function googleLogin(payload) {
+  return post("/auth/google", payload);
+}
