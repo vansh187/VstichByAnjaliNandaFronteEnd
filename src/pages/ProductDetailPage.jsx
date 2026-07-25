@@ -5,8 +5,16 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import StateNotice from "../components/StateNotice";
 import Swatch from "../components/Swatch";
-import { BagIcon, ChevronRightIcon, CheckCircleIcon, MinusIcon, PlusIcon } from "../components/Icons";
+import {
+  BagIcon,
+  ChevronRightIcon,
+  CheckCircleIcon,
+  CloseIcon,
+  MinusIcon,
+  PlusIcon,
+} from "../components/Icons";
 import { useCart } from "../hooks/useCart";
+import { useOverlay } from "../hooks/useOverlay";
 import { getProductDetail } from "../lib/catalogApi";
 import { formatINR } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
@@ -29,8 +37,12 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const validId = Number.isFinite(productId) && productId > 0;
+
+  const closeLightbox = () => setLightboxOpen(false);
+  useOverlay(lightboxOpen, closeLightbox);
 
   // Page is remounted (key={location.pathname} in App.jsx) whenever the
   // product id in the URL changes, so every piece of state above already
@@ -192,13 +204,18 @@ export default function ProductDetailPage() {
 
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
               <div>
-                <div className="aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-sand/50">
+                <button
+                  type="button"
+                  onClick={() => activeImage?.image_url && !imgError && setLightboxOpen(true)}
+                  aria-label="View larger image"
+                  className="aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs"
+                >
                   {activeImage?.image_url && !imgError ? (
                     <img
                       src={activeImage.image_url}
                       alt={detail.product_name}
                       onError={() => setImgError(true)}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
                     />
                   ) : (
                     <Swatch
@@ -207,10 +224,10 @@ export default function ProductDetailPage() {
                       className="h-full w-full"
                     />
                   )}
-                </div>
+                </button>
 
                 {images.length > 1 && (
-                  <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                  <div className="mt-4 flex max-w-[280px] gap-3 overflow-x-auto pb-1 sm:max-w-xs">
                     {images.map((image, index) => (
                       <button
                         key={image.image_url}
@@ -219,7 +236,7 @@ export default function ProductDetailPage() {
                           setActiveImageIndex(index);
                           setImgError(false);
                         }}
-                        className={`h-20 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
+                        className={`h-16 w-[52px] shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                           index === activeImageIndex ? "border-ink" : "border-transparent"
                         }`}
                       >
@@ -371,6 +388,28 @@ export default function ProductDetailPage() {
         )}
       </main>
       <Footer />
+
+      {lightboxOpen && activeImage?.image_url && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-6"
+          onClick={closeLightbox}
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={closeLightbox}
+            className="absolute right-5 top-5 text-cream/90 transition-colors hover:text-cream"
+          >
+            <CloseIcon width="28" height="28" />
+          </button>
+          <img
+            src={activeImage.image_url}
+            alt={detail?.product_name}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-full max-w-full object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
