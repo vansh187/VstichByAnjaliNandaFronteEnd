@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 import { EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
@@ -54,7 +55,39 @@ export default function AuthCard() {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [googleNote, setGoogleNote] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState("");
+
+  const handleGoogleCredential = useCallback(
+    async (idToken) => {
+      setGoogleError("");
+      setFormError("");
+      setGoogleLoading(true);
+      try {
+        await auth.loginWithGoogle(idToken);
+        const redirectTo = location.state?.from?.pathname || "/home";
+        navigate(redirectTo, { replace: true });
+      } catch (err) {
+        setGoogleError(
+          err.message || "Google sign-in failed. Please try again or use your email.",
+        );
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [auth, location, navigate],
+  );
+
+  const { promptSignIn: promptGoogleSignIn } = useGoogleSignIn(handleGoogleCredential);
+
+  const handleGoogleClick = () => {
+    setGoogleError("");
+    promptGoogleSignIn(() => {
+      setGoogleError(
+        "Google sign-in isn't available right now. Please continue with your email, or try again in a moment.",
+      );
+    });
+  };
 
   const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
 
@@ -236,16 +269,15 @@ export default function AuthCard() {
 
         <button
           type="button"
-          onClick={() => setGoogleNote(true)}
-          className="flex w-full items-center justify-center gap-3 border border-sand-dark bg-cream py-3.5 text-sm font-medium text-ink transition-colors hover:bg-sand/50"
+          onClick={handleGoogleClick}
+          disabled={googleLoading}
+          className="flex w-full items-center justify-center gap-3 border border-sand-dark bg-cream py-3.5 text-sm font-medium text-ink transition-colors hover:bg-sand/50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <GoogleIcon />
-          Continue with Google
+          {googleLoading ? "Please wait…" : "Continue with Google"}
         </button>
-        {googleNote && (
-          <p className="mt-3 text-center text-xs text-charcoal/60">
-            Google sign-in isn't connected yet — please continue with your email for now.
-          </p>
+        {googleError && (
+          <p className="mt-3 text-center text-xs text-red-700">{googleError}</p>
         )}
 
         <p className="mt-7 text-center text-sm text-charcoal/70">

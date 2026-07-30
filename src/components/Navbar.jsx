@@ -7,6 +7,7 @@ import AccountMenu from "./AccountMenu";
 import { BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 
 const navLinks = [
+  { label: "Home", href: "/" },
   { label: "Collections", href: "/collections" },
   { label: "Our Story", href: "/our-story" },
 ];

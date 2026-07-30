@@ -1,24 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { getProductDetail } from "../lib/catalogApi";
 import { formatINR } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
+import { sortSizes } from "../utils/variants";
 import Swatch from "./Swatch";
 import { BagIcon, CheckCircleIcon } from "./Icons";
-
-const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "FREE SIZE", "STANDARD"];
-
-function sortSizes(variants) {
-  return [...variants].sort((a, b) => {
-    const ai = SIZE_ORDER.indexOf(a.size.toUpperCase());
-    const bi = SIZE_ORDER.indexOf(b.size.toUpperCase());
-    if (ai === -1 && bi === -1) return a.size.localeCompare(b.size);
-    if (ai === -1) return 1;
-    if (bi === -1) return -1;
-    return ai - bi;
-  });
-}
 
 export default function ProductCard({ product, transitionDelay = 0 }) {
   const { addItem } = useCart();
@@ -105,7 +94,10 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
 
   return (
     <article data-reveal className="reveal" style={{ transitionDelay: `${transitionDelay}ms` }}>
-      <div className="relative aspect-[5/6] overflow-hidden">
+      <Link
+        to={`/product/${product.vstitch_product_id}`}
+        className="relative block aspect-[5/6] overflow-hidden"
+      >
         {product.primary_image_url && !imgError ? (
           <img
             src={product.primary_image_url}
@@ -126,13 +118,17 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
             Out of Stock
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="mt-2 space-y-1.5">
         <p className="text-[9px] tracking-[0.14em] text-charcoal/60 uppercase">
           {product.category_name}
         </p>
-        <h3 className="font-display text-sm text-ink leading-tight">{product.product_name}</h3>
+        <Link to={`/product/${product.vstitch_product_id}`}>
+          <h3 className="font-display text-sm text-ink leading-tight hover:text-gold">
+            {product.product_name}
+          </h3>
+        </Link>
         <p className="font-medium text-xs text-ink">{priceLabel}</p>
 
         {product.available_colors?.length > 0 && (

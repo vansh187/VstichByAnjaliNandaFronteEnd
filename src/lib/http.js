@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./apiConfig";
+import { notifyUnauthorized } from "./authEvents";
 
 function normalizeError(status, data) {
   if (status === 422 && Array.isArray(data?.detail)) {
@@ -59,6 +60,13 @@ async function request(path, { method = "GET", body, token, query } = {}) {
   }
 
   if (!response.ok) {
+    // Only a call that was actually authenticated (carried a token) failing
+    // with 401 means "this session is no longer valid" - a bad-password
+    // response from /login or /auth/google is a 401 too, but never carries
+    // a token, so it can't trigger a false-positive logout here.
+    if (response.status === 401 && token) {
+      notifyUnauthorized();
+    }
     throw normalizeError(response.status, data);
   }
 

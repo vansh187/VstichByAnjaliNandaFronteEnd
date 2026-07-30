@@ -5,9 +5,12 @@ import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
 import StoryPage from "./pages/StoryPage";
+import FaqPage from "./pages/FaqPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrdersPage from "./pages/OrdersPage";
+import TrackOrderPage from "./pages/TrackOrderPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
 import FloatingWhatsapp from "./components/FloatingWhatsapp";
@@ -42,7 +45,12 @@ function App() {
           path="/collections/:categoryId"
           element={<CollectionPage key={location.pathname} />}
         />
+        <Route
+          path="/product/:productId"
+          element={<ProductDetailPage key={location.pathname} />}
+        />
         <Route path="/our-story" element={<StoryPage />} />
+        <Route path="/faqs" element={<FaqPage />} />
         <Route
           path="/checkout"
           element={
@@ -56,6 +64,14 @@ function App() {
           element={
             <ProtectedRoute>
               <OrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/track-order"
+          element={
+            <ProtectedRoute>
+              <TrackOrderPage />
             </ProtectedRoute>
           }
         />

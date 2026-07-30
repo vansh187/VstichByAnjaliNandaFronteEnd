@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PauseIcon,
   PlayIcon,
 } from "./Icons";
+import { useCategories } from "../hooks/useCategories";
+import { useBestSellers } from "../hooks/useBestSellers";
+import { QUALIFYING_THRESHOLD } from "./Bestsellers";
 
 // Placeholder lifestyle photography — swap `image` for real campaign shoots at integration time.
+// `categoryKeywords` picks which real (API-driven) category this slide's
+// shop-now button should point to — matched against live category names,
+// never a hardcoded category id, so it keeps working as categories are
+// added/renamed/removed on the backend.
 const slides = [
   {
     image: "https://picsum.photos/id/64/1800/1000",
@@ -16,8 +24,7 @@ const slides = [
     highlight: "Signature Look",
     subtitle:
       "Hand-embroidered sarees and bridal couture, designed by Anjali Nanda and stitched by master artisans across India.",
-    cta: "Shop Bestsellers",
-    href: "#bestsellers",
+    categoryKeywords: ["saree"],
   },
   {
     image: "https://picsum.photos/id/26/1800/1000",
@@ -27,8 +34,7 @@ const slides = [
     highlight: "A Story",
     subtitle:
       "Zardozi, mirror-work and hand embroidery — heirlooms cut and stitched for your big day.",
-    cta: "Explore Bridal Lehengas",
-    href: "/collections",
+    categoryKeywords: ["lehenga", "bridal"],
   },
   {
     image: "https://picsum.photos/id/106/1800/1000",
@@ -38,8 +44,7 @@ const slides = [
     highlight: "Timeless Elegance",
     subtitle:
       "Kanjivaram and Banarasi silks, woven with centuries of tradition and finished by hand.",
-    cta: "View Sarees",
-    href: "#bestsellers",
+    categoryKeywords: ["saree"],
   },
   {
     image: "https://picsum.photos/id/177/1800/1000",
@@ -49,17 +54,34 @@ const slides = [
     highlight: "The Modern You",
     subtitle:
       "Contemporary silhouettes rooted in Indian craft — for the woman who wears both worlds well.",
-    cta: "Shop Indo-Western",
-    href: "/collections",
+    categoryKeywords: ["indo", "western", "kurti", "suit"],
   },
 ];
 
 const AUTOPLAY_MS = 5500;
 
+function findMatchingCategory(categories, keywords, fallbackIndex) {
+  if (categories.length === 0) return null;
+
+  const match = categories.find((cat) =>
+    keywords.some((keyword) => cat.category_name.toLowerCase().includes(keyword)),
+  );
+
+  return match ?? categories[fallbackIndex % categories.length];
+}
+
 export default function Hero() {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const reducedMotionRef = useRef(false);
+
+  const { categories } = useCategories();
+  // A small limit is enough here — this call only needs qualifying_count to
+  // pick the right CTA label, not the items themselves (Bestsellers renders
+  // those separately with its own limit).
+  const { qualifyingCount } = useBestSellers({ limit: 1 });
+  const bestSellerLabel =
+    qualifyingCount >= QUALIFYING_THRESHOLD ? "Shop Bestsellers" : "Shop New Arrivals";
 
   useEffect(() => {
     reducedMotionRef.current = window.matchMedia(
@@ -78,6 +100,7 @@ export default function Hero() {
 
   const goTo = (i) => setIndex((i + slides.length) % slides.length);
   const slide = slides[index];
+  const slideCategory = findMatchingCategory(categories, slide.categoryKeywords, index);
 
   return (
     <section
@@ -121,12 +144,23 @@ export default function Hero() {
           >
             {slide.subtitle}
           </p>
-          <div className="animate-fade-up mt-10" style={{ animationDelay: "240ms" }}>
+          <div
+            className="animate-fade-up mt-10 flex flex-wrap items-center gap-4"
+            style={{ animationDelay: "240ms" }}
+          >
+            {slideCategory && (
+              <Link
+                to={`/collections/${slideCategory.vstitch_category_id}`}
+                className="inline-flex items-center gap-2 bg-gold px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-gold-light"
+              >
+                Shop {slideCategory.category_name}
+              </Link>
+            )}
             <a
-              href={slide.href}
-              className="inline-flex items-center gap-2 bg-gold px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-gold-light"
+              href="#bestsellers"
+              className="inline-flex items-center gap-2 border border-cream/50 px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-cream/10"
             >
-              {slide.cta}
+              {bestSellerLabel}
             </a>
           </div>
         </div>
