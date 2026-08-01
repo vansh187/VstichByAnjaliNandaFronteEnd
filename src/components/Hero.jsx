@@ -11,8 +11,10 @@ import {
 import Swatch from "./Swatch";
 import { useCategories } from "../hooks/useCategories";
 import { useBestSellers } from "../hooks/useBestSellers";
+import { useAuth } from "../hooks/useAuth";
 import { QUALIFYING_THRESHOLD } from "./Bestsellers";
 import { getCategoryTone, getCategoryQuote } from "../utils/categoryTheme";
+import { formatDisplayName } from "../utils/formatName";
 
 // Hero background videos, one per live category — served from /public/static
 // so the build copies them to the deployed site's root untouched (same
@@ -58,6 +60,12 @@ export default function Hero() {
   const { qualifyingCount } = useBestSellers({ limit: 1 });
   const bestSellerLabel =
     qualifyingCount >= QUALIFYING_THRESHOLD ? "Shop Bestsellers" : "Shop New Arrivals";
+
+  // Same video hero for logged-in and logged-out visitors alike - only the
+  // eyebrow text is personalized, so signed-in users aren't stuck with the
+  // old static-image WelcomeBanner just because they're authenticated.
+  const { user, isAuthenticated } = useAuth();
+  const eyebrow = isAuthenticated ? `Welcome back, ${formatDisplayName(user?.username)}` : "New Collection";
 
   useEffect(() => {
     function applyReducedMotionPreference() {
@@ -177,7 +185,7 @@ export default function Hero() {
       <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-center px-5 sm:px-8">
         <div key={activeIndex} className="max-w-xl">
           <p className="animate-fade-up font-sans text-xs font-medium tracking-[0.4em] text-gold-light uppercase">
-            New Collection
+            {eyebrow}
           </p>
           <h1
             className="animate-fade-up mt-5 font-display text-5xl leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
