@@ -91,6 +91,25 @@ export function PlayIcon(props) {
   );
 }
 
+export function VolumeOnIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...base} {...props}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" stroke="none" />
+      <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 6a9 9 0 0 1 0 12" />
+    </svg>
+  );
+}
+
+export function VolumeOffIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...base} {...props}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" stroke="none" />
+      <path d="M16 9.5l5 5M21 9.5l-5 5" />
+    </svg>
+  );
+}
+
 export function StarIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>

@@ -5,75 +5,44 @@ import {
   ChevronRightIcon,
   PauseIcon,
   PlayIcon,
+  VolumeOffIcon,
+  VolumeOnIcon,
 } from "./Icons";
+import Swatch from "./Swatch";
 import { useCategories } from "../hooks/useCategories";
 import { useBestSellers } from "../hooks/useBestSellers";
 import { QUALIFYING_THRESHOLD } from "./Bestsellers";
+import { getCategoryTone, getCategoryQuote } from "../utils/categoryTheme";
 
-// Placeholder lifestyle photography — swap `image` for real campaign shoots at integration time.
-// `categoryKeywords` picks which real (API-driven) category this slide's
-// shop-now button should point to — matched against live category names,
-// never a hardcoded category id, so it keeps working as categories are
-// added/renamed/removed on the backend.
-const slides = [
-  {
-    image: "https://picsum.photos/id/64/1800/1000",
-    alt: "Model draped in a hand-embroidered ensemble inside a heritage haveli",
-    eyebrow: "Heirloom Craftsmanship · Est. 2014",
-    title: "Discover Your",
-    highlight: "Signature Look",
-    subtitle:
-      "Hand-embroidered sarees and bridal couture, designed by Anjali Nanda and stitched by master artisans across India.",
-    categoryKeywords: ["saree"],
-  },
-  {
-    image: "https://picsum.photos/id/26/1800/1000",
-    alt: "Bridal couture detail with zardozi hand embroidery",
-    eyebrow: "The Bridal Edit",
-    title: "Every Thread Tells",
-    highlight: "A Story",
-    subtitle:
-      "Zardozi, mirror-work and hand embroidery — heirlooms cut and stitched for your big day.",
-    categoryKeywords: ["lehenga", "bridal"],
-  },
-  {
-    image: "https://picsum.photos/id/106/1800/1000",
-    alt: "Flowing silk saree in motion",
-    eyebrow: "The Festive Edit",
-    title: "Drape Yourself In",
-    highlight: "Timeless Elegance",
-    subtitle:
-      "Kanjivaram and Banarasi silks, woven with centuries of tradition and finished by hand.",
-    categoryKeywords: ["saree"],
-  },
-  {
-    image: "https://picsum.photos/id/177/1800/1000",
-    alt: "Indo-western co-ord set styled for the modern wardrobe",
-    eyebrow: "Indo-Western",
-    title: "Tradition, Cut For",
-    highlight: "The Modern You",
-    subtitle:
-      "Contemporary silhouettes rooted in Indian craft — for the woman who wears both worlds well.",
-    categoryKeywords: ["indo", "western", "kurti", "suit"],
-  },
+// Hero background videos, one per live category — served from /public/static
+// so the build copies them to the deployed site's root untouched (same
+// relative URL in dev and every deployment, no bundler asset-hashing to
+// keep in sync). Matched against the category's real name, never a
+// hardcoded category id, so this keeps working if categories are
+// renamed/reordered on the backend. A category with no matching video below
+// falls back to a themed gradient instead of breaking.
+const CATEGORY_VIDEOS = [
+  { keywords: ["cord set", "co-ord", "coord"], src: "/static/cord-set/cord-set-hero.mp4" },
+  { keywords: ["shirt"], src: "/static/shirts/shirts-hero.mp4" },
 ];
 
-const AUTOPLAY_MS = 5500;
-
-function findMatchingCategory(categories, keywords, fallbackIndex) {
-  if (categories.length === 0) return null;
-
-  const match = categories.find((cat) =>
-    keywords.some((keyword) => cat.category_name.toLowerCase().includes(keyword)),
-  );
-
-  return match ?? categories[fallbackIndex % categories.length];
+function resolveVideoForCategory(categoryName) {
+  const name = categoryName.toLowerCase();
+  return CATEGORY_VIDEOS.find((entry) => entry.keywords.some((keyword) => name.includes(keyword)))
+    ?.src ?? null;
 }
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
-  const reducedMotionRef = useRef(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // Starts muted - browsers block autoplay-with-sound outright until the
+  // visitor has interacted with the page, so an unmuted default would just
+  // silently fail to play at all on a first visit. Once they tap unmute
+  // (a real user gesture), the browser allows it and sound continues
+  // across every subsequent slide.
+  const [muted, setMuted] = useState(true);
+  const videoRef = useRef(null);
 
   const { categories } = useCategories();
   // A small limit is enough here — this call only needs qualifying_count to
@@ -84,78 +53,107 @@ export default function Hero() {
     qualifyingCount >= QUALIFYING_THRESHOLD ? "Shop Bestsellers" : "Shop New Arrivals";
 
   useEffect(() => {
-    reducedMotionRef.current = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (reducedMotionRef.current) setPlaying(false);
+    function applyReducedMotionPreference() {
+      const matches = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      setReducedMotion(matches);
+      if (matches) setPlaying(false);
+    }
+    applyReducedMotionPreference();
   }, []);
 
-  useEffect(() => {
-    if (!playing) return undefined;
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, AUTOPLAY_MS);
-    return () => clearInterval(id);
-  }, [playing]);
+  const slideCount = categories.length;
+  const activeIndex = slideCount > 0 ? index % slideCount : 0;
+  const category = slideCount > 0 ? categories[activeIndex] : null;
+  const videoSrc = category ? resolveVideoForCategory(category.category_name) : null;
 
-  const goTo = (i) => setIndex((i + slides.length) % slides.length);
-  const slide = slides[index];
-  const slideCategory = findMatchingCategory(categories, slide.categoryKeywords, index);
+  const goTo = (i) => {
+    if (slideCount === 0) return;
+    setIndex((i + slideCount) % slideCount);
+  };
+
+  // The video itself drives advancement (onEnded below) rather than a fixed
+  // timer, so each category's hero clip always plays out in full before the
+  // next one starts.
+  const handleVideoEnded = () => goTo(activeIndex + 1);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Re-applied on every slide change too: the video element remounts
+    // fresh per slide (key below), so the visitor's mute choice needs to
+    // be re-synced onto the new element rather than reset to the default.
+    video.muted = muted;
+    if (playing) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [playing, muted, activeIndex, videoSrc]);
+
+  if (slideCount === 0) {
+    return (
+      <section
+        id="top"
+        className="relative flex h-[92svh] min-h-[600px] items-center justify-center overflow-hidden bg-ink text-cream"
+      />
+    );
+  }
 
   return (
     <section
       id="top"
       className="group relative h-[92svh] min-h-[600px] overflow-hidden bg-ink text-cream"
     >
-      {slides.map((s, i) => (
-        <div
-          key={s.image}
-          aria-hidden={i !== index}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            i === index ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <img
-            src={s.image}
-            alt={s.alt}
-            loading={i === 0 ? "eager" : "lazy"}
-            fetchPriority={i === 0 ? "high" : "auto"}
-            className={`h-full w-full object-cover ${i === index ? "kenburns-active" : ""}`}
+      <div className="absolute inset-0">
+        {videoSrc ? (
+          <video
+            key={`${activeIndex}-${videoSrc}`}
+            ref={videoRef}
+            src={videoSrc}
+            autoPlay={!reducedMotion}
+            muted={muted}
+            playsInline
+            onEnded={handleVideoEnded}
+            className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/45 to-ink/15" />
-          <div className="absolute inset-0 bg-ink/20" />
-        </div>
-      ))}
+        ) : (
+          <Swatch
+            tone={getCategoryTone(category.vstitch_category_id)}
+            monogram="VN"
+            className="h-full w-full"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/45 to-ink/15" />
+        <div className="absolute inset-0 bg-ink/20" />
+      </div>
 
       <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-center px-5 sm:px-8">
-        <div key={index} className="max-w-xl">
+        <div key={activeIndex} className="max-w-xl">
           <p className="animate-fade-up font-sans text-xs font-medium tracking-[0.4em] text-gold-light uppercase">
-            {slide.eyebrow}
+            New Collection
           </p>
           <h1
             className="animate-fade-up mt-5 font-display text-5xl leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
             style={{ animationDelay: "80ms" }}
           >
-            {slide.title} <span className="italic text-gold-light">{slide.highlight}</span>
+            Shop <span className="italic text-gold-light">{category.category_name}</span>
           </h1>
           <p
             className="animate-fade-up mt-6 max-w-lg text-base font-light text-cream/85 sm:text-lg"
             style={{ animationDelay: "160ms" }}
           >
-            {slide.subtitle}
+            {getCategoryQuote(category.category_name)}
           </p>
           <div
             className="animate-fade-up mt-10 flex flex-wrap items-center gap-4"
             style={{ animationDelay: "240ms" }}
           >
-            {slideCategory && (
-              <Link
-                to={`/collections/${slideCategory.vstitch_category_id}`}
-                className="inline-flex items-center gap-2 bg-gold px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-gold-light"
-              >
-                Shop {slideCategory.category_name}
-              </Link>
-            )}
+            <Link
+              to={`/collections/${category.vstitch_category_id}`}
+              className="inline-flex items-center gap-2 bg-gold px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-gold-light"
+            >
+              Shop {category.category_name}
+            </Link>
             <a
               href="#bestsellers"
               className="inline-flex items-center gap-2 border border-cream/50 px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-cream/10"
@@ -166,46 +164,64 @@ export default function Hero() {
         </div>
       </div>
 
-      <button
-        type="button"
-        aria-label="Previous slide"
-        onClick={() => goTo(index - 1)}
-        className="absolute left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-cream/30 p-2.5 text-cream opacity-0 transition-opacity duration-300 hover:bg-cream/10 focus-visible:opacity-100 group-hover:opacity-100 sm:flex"
-      >
-        <ChevronLeftIcon />
-      </button>
-      <button
-        type="button"
-        aria-label="Next slide"
-        onClick={() => goTo(index + 1)}
-        className="absolute right-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-cream/30 p-2.5 text-cream opacity-0 transition-opacity duration-300 hover:bg-cream/10 focus-visible:opacity-100 group-hover:opacity-100 sm:flex"
-      >
-        <ChevronRightIcon />
-      </button>
+      {slideCount > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous slide"
+            onClick={() => goTo(activeIndex - 1)}
+            className="absolute left-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-cream/30 p-2.5 text-cream opacity-0 transition-opacity duration-300 hover:bg-cream/10 focus-visible:opacity-100 group-hover:opacity-100 sm:flex"
+          >
+            <ChevronLeftIcon />
+          </button>
+          <button
+            type="button"
+            aria-label="Next slide"
+            onClick={() => goTo(activeIndex + 1)}
+            className="absolute right-3 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-cream/30 p-2.5 text-cream opacity-0 transition-opacity duration-300 hover:bg-cream/10 focus-visible:opacity-100 group-hover:opacity-100 sm:flex"
+          >
+            <ChevronRightIcon />
+          </button>
+        </>
+      )}
 
       <div className="absolute inset-x-0 bottom-8 z-10 flex items-center justify-center gap-4">
-        <div className="flex items-center gap-2">
-          {slides.map((s, i) => (
+        {slideCount > 1 && (
+          <div className="flex items-center gap-2">
+            {categories.map((cat, i) => (
+              <button
+                key={cat.vstitch_category_id}
+                type="button"
+                aria-label={`Go to slide ${i + 1}: ${cat.category_name}`}
+                aria-current={i === activeIndex}
+                onClick={() => goTo(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === activeIndex ? "w-8 bg-gold-light" : "w-1.5 bg-cream/40 hover:bg-cream/70"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+        {videoSrc && (
+          <>
             <button
-              key={s.image}
               type="button"
-              aria-label={`Go to slide ${i + 1}: ${s.title} ${s.highlight}`}
-              aria-current={i === index}
-              onClick={() => goTo(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === index ? "w-8 bg-gold-light" : "w-1.5 bg-cream/40 hover:bg-cream/70"
-              }`}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-label={playing ? "Pause slideshow" : "Play slideshow"}
-          onClick={() => setPlaying((p) => !p)}
-          className="text-cream/70 transition-colors hover:text-cream"
-        >
-          {playing ? <PauseIcon /> : <PlayIcon />}
-        </button>
+              aria-label={playing ? "Pause video" : "Play video"}
+              onClick={() => setPlaying((p) => !p)}
+              className="text-cream/70 transition-colors hover:text-cream"
+            >
+              {playing ? <PauseIcon /> : <PlayIcon />}
+            </button>
+            <button
+              type="button"
+              aria-label={muted ? "Unmute video" : "Mute video"}
+              onClick={() => setMuted((m) => !m)}
+              className="text-cream/70 transition-colors hover:text-cream"
+            >
+              {muted ? <VolumeOffIcon /> : <VolumeOnIcon />}
+            </button>
+          </>
+        )}
       </div>
     </section>
   );
