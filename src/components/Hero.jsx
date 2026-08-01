@@ -15,24 +15,7 @@ import { useAuth } from "../hooks/useAuth";
 import { QUALIFYING_THRESHOLD } from "./Bestsellers";
 import { getCategoryTone, getCategoryQuote } from "../utils/categoryTheme";
 import { formatDisplayName } from "../utils/formatName";
-
-// Hero background videos, one per live category — served from /public/static
-// so the build copies them to the deployed site's root untouched (same
-// relative URL in dev and every deployment, no bundler asset-hashing to
-// keep in sync). Matched against the category's real name, never a
-// hardcoded category id, so this keeps working if categories are
-// renamed/reordered on the backend. A category with no matching video below
-// falls back to a themed gradient instead of breaking.
-const CATEGORY_VIDEOS = [
-  { keywords: ["cord set", "co-ord", "coord"], src: "/static/cord-set/cord-set-hero.mp4" },
-  { keywords: ["shirt"], src: "/static/shirts/shirts-hero.mp4" },
-];
-
-function resolveVideoForCategory(categoryName) {
-  const name = categoryName.toLowerCase();
-  return CATEGORY_VIDEOS.find((entry) => entry.keywords.some((keyword) => name.includes(keyword)))
-    ?.src ?? null;
-}
+import { resolveVideoForCategory } from "../utils/categoryVideo";
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
