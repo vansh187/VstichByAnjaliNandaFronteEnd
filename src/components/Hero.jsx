@@ -43,7 +43,13 @@ export default function Hero() {
   // than erroring. Once the visitor interacts with the page at all, the
   // browser allows unmuted playback again.
   const [muted, setMuted] = useState(false);
+  // True only while sound is muted *because the browser blocked autoplay*,
+  // as opposed to the visitor having chosen mute themselves — lets the
+  // first-interaction listener below know whether it's safe to turn sound
+  // back on automatically without overriding an explicit user choice.
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const videoRef = useRef(null);
+  const muteButtonRef = useRef(null);
 
   const { categories } = useCategories();
   // A small limit is enough here — this call only needs qualifying_count to
@@ -96,10 +102,40 @@ export default function Hero() {
       if (!video.muted) {
         video.muted = true;
         setMuted(true);
+        setAutoplayBlocked(true);
         video.play().catch(() => {});
       }
     });
   }, [playing, muted, activeIndex, videoSrc]);
+
+  // Once the browser has blocked unmuted autoplay, the very next click,
+  // tap, or key press anywhere on the page (not just the speaker icon)
+  // counts as the interaction browsers require - so turn sound on right
+  // then instead of making the visitor go hunt for the mute button.
+  //
+  // Interactions on the mute button itself are deliberately excluded: a
+  // "pointerdown" on it fires (and this listener runs) before the button's
+  // own "click" handler, so setMuted(false) here would already have
+  // committed by the time the click handler's setMuted((m) => !m) runs -
+  // flipping sound straight back off. The mute button manages its own
+  // muted/autoplayBlocked state directly, so this listener only needs to
+  // handle every *other* interaction on the page.
+  useEffect(() => {
+    if (!autoplayBlocked) return undefined;
+
+    function unmuteOnFirstInteraction(event) {
+      if (muteButtonRef.current?.contains(event.target)) return;
+      setMuted(false);
+      setAutoplayBlocked(false);
+    }
+
+    document.addEventListener("pointerdown", unmuteOnFirstInteraction, { once: true });
+    document.addEventListener("keydown", unmuteOnFirstInteraction, { once: true });
+    return () => {
+      document.removeEventListener("pointerdown", unmuteOnFirstInteraction);
+      document.removeEventListener("keydown", unmuteOnFirstInteraction);
+    };
+  }, [autoplayBlocked]);
 
   if (slideCount === 0) {
     return (
@@ -224,9 +260,13 @@ export default function Hero() {
               {playing ? <PauseIcon /> : <PlayIcon />}
             </button>
             <button
+              ref={muteButtonRef}
               type="button"
               aria-label={muted ? "Unmute video" : "Mute video"}
-              onClick={() => setMuted((m) => !m)}
+              onClick={() => {
+                setAutoplayBlocked(false);
+                setMuted((m) => !m);
+              }}
               className="text-cream/70 transition-colors hover:text-cream"
             >
               {muted ? <VolumeOffIcon /> : <VolumeOnIcon />}
