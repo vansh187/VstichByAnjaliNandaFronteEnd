@@ -36,12 +36,13 @@ export default function Hero() {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
-  // Starts muted - browsers block autoplay-with-sound outright until the
-  // visitor has interacted with the page, so an unmuted default would just
-  // silently fail to play at all on a first visit. Once they tap unmute
-  // (a real user gesture), the browser allows it and sound continues
-  // across every subsequent slide.
-  const [muted, setMuted] = useState(true);
+  // Defaults to sound on. Browsers block autoplay-with-sound until the
+  // visitor has interacted with the page or the site, so this can silently
+  // fail on a first visit - the play effect below detects that and falls
+  // back to muted (so the hero still animates instead of freezing) rather
+  // than erroring. Once the visitor interacts with the page at all, the
+  // browser allows unmuted playback again.
+  const [muted, setMuted] = useState(false);
   const videoRef = useRef(null);
 
   const { categories } = useCategories();
@@ -83,11 +84,21 @@ export default function Hero() {
     // fresh per slide (key below), so the visitor's mute choice needs to
     // be re-synced onto the new element rather than reset to the default.
     video.muted = muted;
-    if (playing) {
-      video.play().catch(() => {});
-    } else {
+    if (!playing) {
       video.pause();
+      return;
     }
+    video.play().catch(() => {
+      // The browser refused unmuted autoplay (no page interaction yet) -
+      // fall back to muted so the hero still animates instead of freezing
+      // on the first frame. The speaker toggle lets the visitor turn sound
+      // back on any time; that click counts as interaction, so it works.
+      if (!video.muted) {
+        video.muted = true;
+        setMuted(true);
+        video.play().catch(() => {});
+      }
+    });
   }, [playing, muted, activeIndex, videoSrc]);
 
   if (slideCount === 0) {
