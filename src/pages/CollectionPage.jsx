@@ -12,6 +12,7 @@ import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import CategoryVisual from "../components/CategoryVisual";
+import CollectionHeroVideo from "../components/CollectionHeroVideo";
 import { ChevronRightIcon } from "../components/Icons";
 
 export default function CollectionPage() {
@@ -83,15 +84,9 @@ export default function CollectionPage() {
 
         {!categoriesLoading && !categoriesError && category && (
           <>
-            <section className="relative flex h-[46svh] min-h-[340px] items-end overflow-hidden bg-ink text-cream">
+            <section className="group relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
               {!videoFailed ? (
-                <video
-                  key="collection-hero"
-                  src="/static/collection/collection-hero.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
+                <CollectionHeroVideo
                   onError={() => setVideoFailed(true)}
                   className="absolute inset-0 h-full w-full object-cover opacity-80"
                 />
