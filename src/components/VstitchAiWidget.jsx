@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { inputClass } from "../utils/inputClass";
+import { submitCustomizationInterest } from "../lib/catalogApi";
 import FormField from "./FormField";
 import {
   ChatBubbleIcon,
@@ -20,8 +21,22 @@ function consultationHref() {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(CONSULTATION_MESSAGE)}`;
 }
 
-function buildAdminEmailBody({ name, phone, email }) {
+function customizationFallbackMessage({ name, phone, email }) {
   return [
+    "Hi VStitch! I'd like to request a custom outfit. Here are my details:",
+    `Name: ${name}`,
+    `Phone: ${phone}`,
+    `Email: ${email}`,
+  ].join("\n");
+}
+
+function customizationWhatsappHref(values) {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(customizationFallbackMessage(values))}`;
+}
+
+function adminMailHref({ name, phone, email }) {
+  const subject = `Customization Required By ${name}`;
+  const body = [
     "A customer has requested a custom outfit through the VStitch website.",
     "",
     `Name: ${name}`,
@@ -32,23 +47,34 @@ function buildAdminEmailBody({ name, phone, email }) {
     "",
     "— Sent from the VStitch website",
   ].join("\n");
-}
-
-function adminMailHref({ name, phone, email }) {
-  const subject = `Customization Required By ${name}`;
-  const body = buildAdminEmailBody({ name, phone, email });
   return `mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // "menu" -> the two main CTAs. "form" -> the customization contact form.
-// "sent" -> confirmation after handing off to the visitor's mail app.
+// "sent" -> confirmation after a successful submit. "error" -> the
+// WhatsApp/email fallback shown when the request couldn't go through -
+// per the backend team, every non-2xx (422/429/500) is treated the same
+// way here rather than differentiated, since it's a 3-field contact form.
 export default function VstitchAiWidget() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState("menu");
   const [values, setValues] = useState({ name: "", phone: "", email: "" });
   const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  // Same StrictMode double-invoke pitfall fixed in ReturnReplaceModal /
+  // CustomizationModal: reset to true inside the effect body on every
+  // mount, not just declared via useRef(true).
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const resetAndClose = () => {
+    if (submitting) return;
     setOpen(false);
     setView("menu");
     setValues({ name: "", phone: "", email: "" });
@@ -60,8 +86,9 @@ export default function VstitchAiWidget() {
     if (fieldErrors[key]) setFieldErrors((prev) => ({ ...prev, [key]: null }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
 
     const errors = {};
     if (!values.name.trim()) errors.name = "Required";
@@ -75,8 +102,24 @@ export default function VstitchAiWidget() {
       return;
     }
 
-    window.location.href = adminMailHref(values);
-    setView("sent");
+    setSubmitting(true);
+    try {
+      await submitCustomizationInterest({
+        name: values.name.trim(),
+        phone: values.phone.trim(),
+        email: values.email.trim(),
+      });
+      if (!mountedRef.current) return;
+      setView("sent");
+    } catch {
+      // Per the backend team: don't differentiate 422/429/500 here - just
+      // drop straight to the WhatsApp/email fallback rather than trying to
+      // surface granular errors on a 3-field contact form.
+      if (!mountedRef.current) return;
+      setView("error");
+    } finally {
+      if (mountedRef.current) setSubmitting(false);
+    }
   };
 
   return (
@@ -92,7 +135,8 @@ export default function VstitchAiWidget() {
               type="button"
               aria-label="Close"
               onClick={resetAndClose}
-              className="text-cream/80 hover:text-cream"
+              disabled={submitting}
+              className="text-cream/80 hover:text-cream disabled:cursor-not-allowed disabled:opacity-40"
             >
               <CloseIcon width="18" height="18" />
             </button>
@@ -146,7 +190,8 @@ export default function VstitchAiWidget() {
                 <button
                   type="button"
                   onClick={() => setView("menu")}
-                  className="mb-3 flex items-center gap-1 text-xs font-medium tracking-wide text-charcoal/60 hover:text-ink"
+                  disabled={submitting}
+                  className="mb-3 flex items-center gap-1 text-xs font-medium tracking-wide text-charcoal/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronLeftIcon width="14" height="14" />
                   Back
@@ -161,6 +206,7 @@ export default function VstitchAiWidget() {
                       type="text"
                       value={values.name}
                       onChange={(e) => setField("name", e.target.value)}
+                      disabled={submitting}
                       className={inputClass(fieldErrors.name)}
                     />
                   </FormField>
@@ -169,6 +215,7 @@ export default function VstitchAiWidget() {
                       type="tel"
                       value={values.phone}
                       onChange={(e) => setField("phone", e.target.value)}
+                      disabled={submitting}
                       className={inputClass(fieldErrors.phone)}
                     />
                   </FormField>
@@ -177,14 +224,16 @@ export default function VstitchAiWidget() {
                       type="email"
                       value={values.email}
                       onChange={(e) => setField("email", e.target.value)}
+                      disabled={submitting}
                       className={inputClass(fieldErrors.email)}
                     />
                   </FormField>
                   <button
                     type="submit"
-                    className="mt-1 w-full bg-ink py-3 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
+                    disabled={submitting}
+                    className="mt-1 w-full bg-ink py-3 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:bg-sand-dark disabled:text-charcoal/40"
                   >
-                    Contact Us
+                    {submitting ? "Sending…" : "Contact Us"}
                   </button>
                 </form>
               </div>
@@ -193,10 +242,10 @@ export default function VstitchAiWidget() {
             {view === "sent" && (
               <div className="flex flex-col items-center gap-3 py-4 text-center">
                 <CheckCircleIcon width="36" height="36" className="text-emerald-600" />
-                <p className="font-display text-lg text-ink">Almost there</p>
+                <p className="font-display text-lg text-ink">Request sent</p>
                 <p className="text-sm text-charcoal/70">
-                  We've opened an email to our styling team with your details — please hit send
-                  in your mail app to confirm your request.
+                  Thank you! Our styling team has been notified and will reach out to you
+                  shortly to discuss your custom outfit.
                 </p>
                 <button
                   type="button"
@@ -204,6 +253,37 @@ export default function VstitchAiWidget() {
                   className="mt-1 bg-ink px-6 py-2.5 text-sm font-medium tracking-[0.12em] text-cream uppercase hover:bg-charcoal"
                 >
                   Done
+                </button>
+              </div>
+            )}
+
+            {view === "error" && (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <p className="font-display text-lg text-ink">Couldn't reach us just now</p>
+                <p className="text-sm text-charcoal/70">
+                  Please message us directly instead — we've kept your details ready to send.
+                </p>
+                <a
+                  href={customizationWhatsappHref(values)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2 bg-ink py-3 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
+                >
+                  <WhatsappGlyphIcon width="18" height="18" />
+                  Message on WhatsApp
+                </a>
+                <a
+                  href={adminMailHref(values)}
+                  className="text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold"
+                >
+                  or email us directly
+                </a>
+                <button
+                  type="button"
+                  onClick={resetAndClose}
+                  className="mt-1 text-xs font-medium tracking-wide text-charcoal/60 hover:text-ink"
+                >
+                  Close
                 </button>
               </div>
             )}
