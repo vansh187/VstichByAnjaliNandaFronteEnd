@@ -271,6 +271,20 @@ export function HeadsetIcon(props) {
   );
 }
 
+// Filled chat-bubble mark for the VStitch AI floating widget button - a
+// small notch/spark inside reads as "assistant", distinct from the plain
+// WhatsApp glyph used inside the panel for the consultation option.
+export function ChatBubbleIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}>
+      <path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-4.4 3.3A.8.8 0 0 1 3.3 19.7L4 16.8V5Z" />
+      <circle cx="9" cy="10" r="1.3" fill="#faf6ef" />
+      <circle cx="13.5" cy="10" r="1.3" fill="#faf6ef" />
+      <circle cx="18" cy="10" r="1.3" fill="#faf6ef" />
+    </svg>
+  );
+}
+
 export function EyeIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...base} {...props}>

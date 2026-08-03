@@ -12,7 +12,7 @@ import OrdersPage from "./pages/OrdersPage";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
-import FloatingWhatsapp from "./components/FloatingWhatsapp";
+import VstitchAiWidget from "./components/VstitchAiWidget";
 import CartToast from "./components/CartToast";
 
 function App() {
@@ -83,7 +83,7 @@ function App() {
       )}
 
       <CartDrawer />
-      <FloatingWhatsapp />
+      <VstitchAiWidget />
       <CartToast />
     </>
   );
