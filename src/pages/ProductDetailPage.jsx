@@ -16,6 +16,7 @@ import {
   PlusIcon,
 } from "../components/Icons";
 import { useCart } from "../hooks/useCart";
+import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
 import { getProductDetail } from "../lib/catalogApi";
 import { formatINR } from "../utils/format";
@@ -28,6 +29,7 @@ export default function ProductDetailPage() {
   const productId = Number(productIdParam);
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { token } = useAuth();
 
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -338,7 +340,9 @@ export default function ProductDetailPage() {
                     <button
                       type="button"
                       onClick={() => setCustomizeOpen(true)}
-                      className="mt-3 text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold"
+                      disabled={!selectedVariant}
+                      title={!selectedVariant ? "Select a size to request a custom fit" : undefined}
+                      className="mt-3 text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold disabled:cursor-not-allowed disabled:text-charcoal/40 disabled:no-underline disabled:hover:text-charcoal/40"
                     >
                       Need a custom fit? Request bespoke measurements
                     </button>
@@ -432,8 +436,14 @@ export default function ProductDetailPage() {
       )}
 
       {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} />}
-      {customizeOpen && detail && (
-        <CustomizationModal productName={detail.product_name} onClose={() => setCustomizeOpen(false)} />
+      {customizeOpen && detail && selectedVariant && (
+        <CustomizationModal
+          productId={detail.vstitch_product_id}
+          variantId={selectedVariant.vstitch_product_variant_id}
+          productName={detail.product_name}
+          token={token}
+          onClose={() => setCustomizeOpen(false)}
+        />
       )}
     </div>
   );
