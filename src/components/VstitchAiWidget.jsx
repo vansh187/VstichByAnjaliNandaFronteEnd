@@ -13,6 +13,7 @@ import {
 
 const WHATSAPP_NUMBER = "919953149142";
 const ADMIN_EMAIL = "vstitchbyanjalinanda@gmail.com";
+const TOOLTIP_DELAY_MS = 1500;
 
 const CONSULTATION_MESSAGE =
   "Hi VStitch! I'd love to book a private styling consultation with Anjali Nanda to find pieces made for me.";
@@ -61,6 +62,7 @@ export default function VstitchAiWidget() {
   const [values, setValues] = useState({ name: "", phone: "", email: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Same StrictMode double-invoke pitfall fixed in ReturnReplaceModal /
   // CustomizationModal: reset to true inside the effect body on every
@@ -72,6 +74,17 @@ export default function VstitchAiWidget() {
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowTooltip(true), TOOLTIP_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const openFromTooltip = () => {
+    setShowTooltip(false);
+    setOpen(true);
+    setView("form");
+  };
 
   const resetAndClose = () => {
     if (submitting) return;
@@ -291,9 +304,32 @@ export default function VstitchAiWidget() {
         </div>
       )}
 
+      {!open && showTooltip && (
+        <div className="relative max-w-[220px] rounded-2xl rounded-br-sm border border-sand-dark/70 bg-white shadow-xl">
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setShowTooltip(false)}
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-cream"
+          >
+            <CloseIcon width="10" height="10" strokeWidth="2.5" />
+          </button>
+          <button
+            type="button"
+            onClick={openFromTooltip}
+            className="px-4 py-3 text-left text-sm leading-snug text-charcoal"
+          >
+            Hi, I'm VStitch AI — can I help you with a customization?
+          </button>
+        </div>
+      )}
+
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setShowTooltip(false);
+          setOpen((o) => !o);
+        }}
         aria-label={open ? "Close VStitch AI" : "Open VStitch AI"}
         className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ink text-cream shadow-xl transition-transform hover:scale-110"
       >
