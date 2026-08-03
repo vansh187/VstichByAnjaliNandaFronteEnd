@@ -1,5 +1,4 @@
 import { Route, Routes, useLocation } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
@@ -27,7 +26,7 @@ function App() {
           login modal below can overlay it. Direct/refresh visits to /login fall
           back to the full-page AuthPage since there's no page to show behind it. */}
       <Routes location={backgroundLocation || location}>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route
           path="/home"

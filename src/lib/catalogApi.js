@@ -59,3 +59,19 @@ export function getOrders(token) {
 export function getOrderTracking(orderId, token) {
   return get(`/orders/${orderId}/tracking`, undefined, token);
 }
+
+export function returnOrder(orderId, payload, token) {
+  return post(`/orders/${orderId}/return`, payload, token);
+}
+
+export function replaceOrder(orderId, payload, token) {
+  return post(`/orders/${orderId}/replace`, payload, token);
+}
+
+// Auth is optional here (the product page itself doesn't require login) -
+// http.js only attaches an Authorization header when a token is actually
+// passed, so calling this with token=undefined submits anonymously per the
+// backend spec.
+export function submitCustomizationRequest(productId, variantId, payload, token) {
+  return post(`/products/${productId}/variants/${variantId}/customization-requests`, payload, token);
+}

@@ -5,6 +5,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import StateNotice from "../components/StateNotice";
 import Swatch from "../components/Swatch";
+import SizeGuideModal from "../components/SizeGuideModal";
+import CustomizationModal from "../components/CustomizationModal";
 import {
   BagIcon,
   ChevronRightIcon,
@@ -14,6 +16,7 @@ import {
   PlusIcon,
 } from "../components/Icons";
 import { useCart } from "../hooks/useCart";
+import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
 import { getProductDetail } from "../lib/catalogApi";
 import { formatINR } from "../utils/format";
@@ -26,6 +29,7 @@ export default function ProductDetailPage() {
   const productId = Number(productIdParam);
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { token } = useAuth();
 
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +42,8 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
 
   const validId = Number.isFinite(productId) && productId > 0;
 
@@ -300,7 +306,16 @@ export default function ProductDetailPage() {
 
                 {inStock && (
                   <div className="mt-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">Size</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">Size</p>
+                      <button
+                        type="button"
+                        onClick={() => setSizeGuideOpen(true)}
+                        className="text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold"
+                      >
+                        Size Guide
+                      </button>
+                    </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {variantsForColor.map((v) => (
                         <button
@@ -322,6 +337,15 @@ export default function ProductDetailPage() {
                         </button>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setCustomizeOpen(true)}
+                      disabled={!selectedVariant}
+                      title={!selectedVariant ? "Select a size to request a custom fit" : undefined}
+                      className="mt-3 text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold disabled:cursor-not-allowed disabled:text-charcoal/40 disabled:no-underline disabled:hover:text-charcoal/40"
+                    >
+                      Need a custom fit? Request bespoke measurements
+                    </button>
                   </div>
                 )}
 
@@ -409,6 +433,17 @@ export default function ProductDetailPage() {
             className="max-h-full max-w-full object-contain"
           />
         </div>
+      )}
+
+      {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} />}
+      {customizeOpen && detail && selectedVariant && (
+        <CustomizationModal
+          productId={detail.vstitch_product_id}
+          variantId={selectedVariant.vstitch_product_variant_id}
+          productName={detail.product_name}
+          token={token}
+          onClose={() => setCustomizeOpen(false)}
+        />
       )}
     </div>
   );

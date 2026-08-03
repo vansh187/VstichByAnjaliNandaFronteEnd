@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
@@ -10,6 +10,7 @@ import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import { ProductGridSkeleton } from "../components/Skeletons";
+import CollectionHeroVideo from "../components/CollectionHeroVideo";
 
 function CategoryProductsSection({ category, index }) {
   const { items, loading, error, reload } = useProducts({
@@ -72,6 +73,7 @@ function CategoryProductsSection({ category, index }) {
 export default function CollectionsPage() {
   const revealRef = useReveal();
   const { categories, loading, error, reload } = useCategories();
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -82,9 +84,16 @@ export default function CollectionsPage() {
       <AnnouncementBar />
       <Navbar />
       <main>
-        <section className="relative overflow-hidden bg-ink text-cream">
+        <section className="relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
+          {!videoFailed && (
+            <CollectionHeroVideo
+              onError={() => setVideoFailed(true)}
+              className="absolute inset-0 h-full w-full object-cover opacity-70"
+            />
+          )}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_40%)]" />
-          <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-5 py-24 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-28">
+          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/20" />
+          <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 pb-16 sm:px-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="font-sans text-xs font-semibold tracking-[0.32em] text-gold-light uppercase">
                 Collections

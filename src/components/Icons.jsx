@@ -91,6 +91,25 @@ export function PlayIcon(props) {
   );
 }
 
+export function VolumeOnIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...base} {...props}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" stroke="none" />
+      <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 6a9 9 0 0 1 0 12" />
+    </svg>
+  );
+}
+
+export function VolumeOffIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...base} {...props}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" stroke="none" />
+      <path d="M16 9.5l5 5M21 9.5l-5 5" />
+    </svg>
+  );
+}
+
 export function StarIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
@@ -228,6 +247,26 @@ export function GoogleIcon(props) {
         fill="#1976D2"
         d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.6 5.6C41.4 36.1 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5Z"
       />
+    </svg>
+  );
+}
+
+export function RulerIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" {...base} {...props}>
+      <path d="M3 16.5 16.5 3l4.5 4.5L7.5 21 3 16.5Z" />
+      <path d="M9 9l1.8 1.8M12 6l1.8 1.8M6 12l1.8 1.8M15 3l1.8 1.8" />
+    </svg>
+  );
+}
+
+export function HeadsetIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" {...base} {...props}>
+      <path d="M4 13a8 8 0 0 1 16 0" />
+      <rect x="3" y="13" width="4" height="6" rx="1.5" />
+      <rect x="17" y="13" width="4" height="6" rx="1.5" />
+      <path d="M19 19v1a3 3 0 0 1-3 3h-3" />
     </svg>
   );
 }

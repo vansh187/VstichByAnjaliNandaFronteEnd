@@ -1,7 +1,7 @@
 import { useReveal } from "../hooks/useReveal";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
-import WelcomeBanner from "../components/WelcomeBanner";
+import Hero from "../components/Hero";
 import Categories from "../components/Categories";
 import Bestsellers from "../components/Bestsellers";
 import Features from "../components/Features";
@@ -19,7 +19,7 @@ export default function HomePage() {
       <AnnouncementBar />
       <Navbar />
       <main>
-        <WelcomeBanner />
+        <Hero />
         <Categories />
         <Bestsellers />
         <Features />

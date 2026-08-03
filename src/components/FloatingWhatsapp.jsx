@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { WhatsappGlyphIcon } from "./Icons";
+import { CloseIcon, WhatsappGlyphIcon } from "./Icons";
 
 const SHOW_DELAY_MS = 1500;
 
@@ -14,7 +14,15 @@ export default function FloatingWhatsapp() {
   return (
     <div className="fixed bottom-6 right-6 z-40 flex items-end gap-3">
       {showTooltip && (
-        <div className="max-w-[210px] rounded-2xl rounded-br-sm border border-sand-dark/70 bg-white px-4 py-3 text-sm leading-snug text-charcoal shadow-xl">
+        <div className="relative max-w-[210px] rounded-2xl rounded-br-sm border border-sand-dark/70 bg-white px-4 py-3 text-sm leading-snug text-charcoal shadow-xl">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setShowTooltip(false)}
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-cream"
+          >
+            <CloseIcon width="10" height="10" strokeWidth="2.5" />
+          </button>
           Have a question? Chat with us on WhatsApp to book a private styling consultation with
           Anjali Nanda.
         </div>

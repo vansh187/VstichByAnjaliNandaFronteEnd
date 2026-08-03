@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import { API_BASE_URL } from "../lib/apiConfig";
 import { getOrders, getOrderTracking } from "../lib/catalogApi";
 import { getStatusMeta, extractTrackingDetails } from "../utils/tracking";
+import ReturnReplaceModal from "../components/ReturnReplaceModal";
 
 const PAGE_SIZE = 10;
 // Re-poll live tracking for visible, non-terminal orders at this cadence
@@ -52,6 +53,20 @@ function formatDate(value) {
     minute: "2-digit",
     hour12: true,
   });
+}
+
+// Purely informational (e.g. "Return available from 25 Jul") - the backend's
+// can_return/can_replace booleans are always the actual source of truth for
+// whether the buttons show, per the integration guide's own guidance.
+function getEligibleDate(deliveredDate) {
+  const date = parseServerDate(deliveredDate);
+  if (!date) return null;
+  // Add exactly 7*24h in absolute time (not local setDate/getDate, which
+  // would add 7 *local-timezone* calendar days and can land on a different
+  // day than 7 IST days for viewers outside IST) - the result is then
+  // always rendered in Asia/Kolkata below, matching every other date in
+  // this file and the backend's own IST-based 7-day rule.
+  return new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
 }
 
 function getCreatedAt(order) {
@@ -187,6 +202,19 @@ function normalizeOrders(payload) {
         itemSummary: itemSummary || "Products available",
         itemCount: lineItems.length || order?.item_count || order?.items_count || 0,
         images: getOrderImages(order),
+        // Return/replace eligibility - always trust these booleans over any
+        // client-side date math, per the backend's own guidance (it
+        // re-validates everything server-side regardless).
+        deliveredDate: order?.delivered_date ?? null,
+        canReturn: Boolean(order?.can_return),
+        canReplace: Boolean(order?.can_replace),
+        items: lineItems.map((item) => ({
+          id: item?.vstitch_order_item_id ?? null,
+          name: item?.product_name ?? item?.name ?? "Item",
+          size: item?.size ?? null,
+          color: item?.color ?? null,
+          quantity: item?.quantity ?? 1,
+        })),
       };
     })
     .sort((a, b) => {
@@ -207,6 +235,11 @@ export default function OrdersPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [trackingByOrderId, setTrackingByOrderId] = useState({});
   const trackingInFlightRef = useRef(new Set());
+  const [activeRequest, setActiveRequest] = useState(null); // { mode: "return" | "replace", order }
+  // Orders with a request just submitted this session - hidden immediately
+  // rather than waiting on a refetch, since the backend won't allow a
+  // second open return/replace on the same order anyway.
+  const [justRequestedOrderIds, setJustRequestedOrderIds] = useState(() => new Set());
 
   useEffect(() => {
     let active = true;
@@ -387,6 +420,60 @@ export default function OrdersPage() {
                     <p className="mt-1 text-lg font-semibold text-ink">{formatCurrency(order.total)}</p>
                   </div>
                 </div>
+
+                {(() => {
+                  const requestOpen = justRequestedOrderIds.has(order.id);
+                  if (requestOpen) {
+                    return (
+                      <p className="mt-4 border-t border-sand-dark/60 pt-4 text-sm text-charcoal/70">
+                        A return/replace request is already in progress for this order.
+                      </p>
+                    );
+                  }
+
+                  if (order.canReturn || order.canReplace) {
+                    return (
+                      <div className="mt-4 flex flex-wrap gap-3 border-t border-sand-dark/60 pt-4">
+                        {order.canReturn && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveRequest({ mode: "return", order })}
+                            className="rounded-full border border-sand-dark px-4 py-2 text-xs font-medium tracking-[0.12em] text-ink uppercase transition-colors hover:bg-sand/60"
+                          >
+                            Return
+                          </button>
+                        )}
+                        {order.canReplace && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveRequest({ mode: "replace", order })}
+                            className="rounded-full border border-sand-dark px-4 py-2 text-xs font-medium tracking-[0.12em] text-ink uppercase transition-colors hover:bg-sand/60"
+                          >
+                            Replace
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  const eligibleDate = order.deliveredDate ? getEligibleDate(order.deliveredDate) : null;
+                  if (eligibleDate) {
+                    return (
+                      <p className="mt-4 border-t border-sand-dark/60 pt-4 text-sm text-charcoal/60">
+                        Return &amp; replace will be available from{" "}
+                        {eligibleDate.toLocaleDateString("en-IN", {
+                          timeZone: "Asia/Kolkata",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}{" "}
+                        (7 days after delivery).
+                      </p>
+                    );
+                  }
+
+                  return null;
+                })()}
               </article>
               );
             })}
@@ -406,6 +493,18 @@ export default function OrdersPage() {
         )}
       </main>
       <Footer />
+
+      {activeRequest && (
+        <ReturnReplaceModal
+          mode={activeRequest.mode}
+          order={activeRequest.order}
+          token={token}
+          onClose={() => setActiveRequest(null)}
+          onSuccess={() => {
+            setJustRequestedOrderIds((prev) => new Set(prev).add(activeRequest.order.id));
+          }}
+        />
+      )}
     </div>
   );
 }

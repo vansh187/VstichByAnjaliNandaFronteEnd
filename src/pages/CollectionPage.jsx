@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
@@ -12,12 +12,14 @@ import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import CategoryVisual from "../components/CategoryVisual";
+import CollectionHeroVideo from "../components/CollectionHeroVideo";
 import { ChevronRightIcon } from "../components/Icons";
 
 export default function CollectionPage() {
   const { categoryId: categoryIdParam } = useParams();
   const categoryId = Number(categoryIdParam);
   const revealRef = useReveal();
+  const [videoFailed, setVideoFailed] = useState(false);
 
   const {
     categories,
@@ -82,11 +84,18 @@ export default function CollectionPage() {
 
         {!categoriesLoading && !categoriesError && category && (
           <>
-            <section className="relative flex h-[46svh] min-h-[340px] items-end overflow-hidden bg-ink text-cream">
-              <CategoryVisual
-                category={category}
-                className="absolute inset-0 h-full w-full opacity-80"
-              />
+            <section className="group relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
+              {!videoFailed ? (
+                <CollectionHeroVideo
+                  onError={() => setVideoFailed(true)}
+                  className="absolute inset-0 h-full w-full object-cover opacity-80"
+                />
+              ) : (
+                <CategoryVisual
+                  category={category}
+                  className="absolute inset-0 h-full w-full opacity-80"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
               <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-10 text-left sm:px-8">
