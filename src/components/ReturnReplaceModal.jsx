@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useOverlay } from "../hooks/useOverlay";
 import { returnOrder, replaceOrder } from "../lib/catalogApi";
-import { CloseIcon, MinusIcon, PlusIcon, CheckCircleIcon } from "./Icons";
+import ModalShell from "./ModalShell";
+import { MinusIcon, PlusIcon, CheckCircleIcon } from "./Icons";
 
 const ISSUE_CATEGORIES = [
   { value: "size_issue", label: "Wrong Size" },
@@ -30,16 +30,6 @@ export default function ReturnReplaceModal({ mode, order, token, onClose, onSucc
       mountedRef.current = false;
     };
   }, []);
-
-  // Closing mid-submit would let the request resolve after the modal is
-  // gone (harmless for a success, but confusing if the visitor thinks
-  // they've cancelled) - block it, same as most checkout/payment modals do.
-  const handleClose = () => {
-    if (submitting) return;
-    onClose();
-  };
-
-  useOverlay(true, handleClose);
 
   const toggleItem = (item) => {
     setSelectedQty((prev) => {
@@ -116,31 +106,12 @@ export default function ReturnReplaceModal({ mode, order, token, onClose, onSucc
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/55 px-5 py-10 backdrop-blur-sm sm:items-center"
-      onClick={handleClose}
+    <ModalShell
+      title={`${isReplace ? "Replace Item" : "Return Order"} — ${order.orderNumber}`}
+      onClose={onClose}
+      closeDisabled={submitting}
     >
-      <div
-        className="w-full max-w-lg border border-sand-dark bg-cream shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-sand-dark px-6 py-5">
-          <h2 className="font-display text-xl text-ink">
-            {isReplace ? "Replace Item" : "Return Order"} — {order.orderNumber}
-          </h2>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={handleClose}
-            disabled={submitting}
-            className="text-charcoal/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <CloseIcon width="20" height="20" />
-          </button>
-        </div>
-
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-6">
-          {result ? (
+      {result ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
               <CheckCircleIcon width="40" height="40" className="text-emerald-600" />
               <p className="font-display text-xl text-ink">
@@ -302,8 +273,6 @@ export default function ReturnReplaceModal({ mode, order, token, onClose, onSucc
               </button>
             </form>
           )}
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

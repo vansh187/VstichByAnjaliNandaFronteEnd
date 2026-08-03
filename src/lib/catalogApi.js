@@ -75,7 +75,3 @@ export function replaceOrder(orderId, payload, token) {
 export function submitCustomizationRequest(productId, variantId, payload, token) {
   return post(`/products/${productId}/variants/${variantId}/customization-requests`, payload, token);
 }
-
-export function getCustomizationRequests(token) {
-  return get("/customization-requests", undefined, token);
-}
