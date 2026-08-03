@@ -75,3 +75,9 @@ export function replaceOrder(orderId, payload, token) {
 export function submitCustomizationRequest(productId, variantId, payload, token) {
   return post(`/products/${productId}/variants/${variantId}/customization-requests`, payload, token);
 }
+
+// No auth - reachable by any visitor, logged in or not (see
+// customization-interest-email-backend-integration.md).
+export function submitCustomizationInterest(payload) {
+  return post("/customization-interest", payload);
+}

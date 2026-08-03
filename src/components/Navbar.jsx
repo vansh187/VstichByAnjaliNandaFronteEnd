@@ -49,9 +49,16 @@ export default function Navbar() {
 
         <Link
           to="/"
-          className="mr-auto min-w-0 flex-1 font-display text-lg leading-tight tracking-wide text-ink sm:text-3xl"
+          className="mr-auto flex min-w-0 flex-1 items-center gap-2.5 font-display text-lg leading-tight tracking-wide text-ink sm:text-3xl"
         >
-          VStitch <span className="italic text-gold">by Anjali Nanda</span>
+          <img
+            src="/static/brand/logo.jpg"
+            alt="VStitch by Anjali Nanda"
+            className="h-9 w-9 shrink-0 rounded-full object-cover sm:h-11 sm:w-11"
+          />
+          <span>
+            VStitch <span className="italic text-gold">by Anjali Nanda</span>
+          </span>
         </Link>
 
         <nav className="hidden flex-1 items-center justify-end gap-6 lg:flex lg:ml-8">
