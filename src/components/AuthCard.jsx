@@ -136,7 +136,12 @@ export default function AuthCard() {
     <div className="flex max-h-[88svh] flex-col border border-sand-dark bg-cream/95 shadow-2xl backdrop-blur-sm">
       {/* Pinned header: title + Log In / Sign Up tabs stay visible while the form below scrolls */}
       <div className="shrink-0 border-b border-sand-dark bg-cream px-8 pt-8 sm:px-10 sm:pt-10">
-        <p className="text-center font-sans text-xs font-medium tracking-[0.3em] text-gold uppercase">
+        <img
+          src="/static/brand/logo.jpg"
+          alt="VStitch by Anjali Nanda"
+          className="mx-auto h-12 w-12 rounded-full object-cover"
+        />
+        <p className="mt-3 text-center font-sans text-xs font-medium tracking-[0.3em] text-gold uppercase">
           Welcome to VStitch
         </p>
         <h1 className="mt-2 text-center font-display text-3xl text-ink">

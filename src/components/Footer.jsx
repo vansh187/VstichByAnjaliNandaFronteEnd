@@ -17,9 +17,16 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8">
         <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
-            <p className="font-display text-2xl italic">
-              VStitch <span className="text-gold-light">by Anjali Nanda</span>
-            </p>
+            <div className="flex items-center gap-3">
+              <img
+                src="/static/brand/logo.jpg"
+                alt="VStitch by Anjali Nanda"
+                className="h-11 w-11 shrink-0 rounded-full object-cover"
+              />
+              <p className="font-display text-2xl italic">
+                VStitch <span className="text-gold-light">by Anjali Nanda</span>
+              </p>
+            </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-cream/65">
               Handcrafted Indian couture — sarees, bridalwear and bespoke
               tailoring, made by artisans, worn for a lifetime.
