@@ -251,6 +251,26 @@ export function GoogleIcon(props) {
   );
 }
 
+export function RulerIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" {...base} {...props}>
+      <path d="M3 16.5 16.5 3l4.5 4.5L7.5 21 3 16.5Z" />
+      <path d="M9 9l1.8 1.8M12 6l1.8 1.8M6 12l1.8 1.8M15 3l1.8 1.8" />
+    </svg>
+  );
+}
+
+export function HeadsetIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" {...base} {...props}>
+      <path d="M4 13a8 8 0 0 1 16 0" />
+      <rect x="3" y="13" width="4" height="6" rx="1.5" />
+      <rect x="17" y="13" width="4" height="6" rx="1.5" />
+      <path d="M19 19v1a3 3 0 0 1-3 3h-3" />
+    </svg>
+  );
+}
+
 export function EyeIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...base} {...props}>

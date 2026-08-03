@@ -5,6 +5,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import StateNotice from "../components/StateNotice";
 import Swatch from "../components/Swatch";
+import SizeGuideModal from "../components/SizeGuideModal";
+import CustomizationModal from "../components/CustomizationModal";
 import {
   BagIcon,
   ChevronRightIcon,
@@ -38,6 +40,8 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
 
   const validId = Number.isFinite(productId) && productId > 0;
 
@@ -300,7 +304,16 @@ export default function ProductDetailPage() {
 
                 {inStock && (
                   <div className="mt-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">Size</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">Size</p>
+                      <button
+                        type="button"
+                        onClick={() => setSizeGuideOpen(true)}
+                        className="text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold"
+                      >
+                        Size Guide
+                      </button>
+                    </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {variantsForColor.map((v) => (
                         <button
@@ -322,6 +335,13 @@ export default function ProductDetailPage() {
                         </button>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setCustomizeOpen(true)}
+                      className="mt-3 text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold"
+                    >
+                      Need a custom fit? Request bespoke measurements
+                    </button>
                   </div>
                 )}
 
@@ -409,6 +429,11 @@ export default function ProductDetailPage() {
             className="max-h-full max-w-full object-contain"
           />
         </div>
+      )}
+
+      {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} />}
+      {customizeOpen && detail && (
+        <CustomizationModal productName={detail.product_name} onClose={() => setCustomizeOpen(false)} />
       )}
     </div>
   );
