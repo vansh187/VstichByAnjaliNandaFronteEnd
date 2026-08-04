@@ -8,7 +8,9 @@ import { VolumeOffIcon, VolumeOnIcon } from "./Icons";
 // than freezing on the first frame, and the very next interaction anywhere
 // on the page (except the mute button itself, which manages its own toggle)
 // turns sound back on automatically.
-export default function CollectionHeroVideo({ className = "", onError }) {
+const DEFAULT_SRC = "/static/collection/collection-hero.mp4";
+
+export default function CollectionHeroVideo({ src = DEFAULT_SRC, className = "", onError }) {
   const [muted, setMuted] = useState(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const videoRef = useRef(null);
@@ -49,7 +51,7 @@ export default function CollectionHeroVideo({ className = "", onError }) {
     <>
       <video
         ref={videoRef}
-        src="/static/collection/collection-hero.mp4"
+        src={src}
         autoPlay
         loop
         muted={muted}

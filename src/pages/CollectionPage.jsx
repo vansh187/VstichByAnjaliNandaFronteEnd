@@ -13,6 +13,7 @@ import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import CategoryVisual from "../components/CategoryVisual";
 import CollectionHeroVideo from "../components/CollectionHeroVideo";
+import { resolveVideoForCategory } from "../utils/categoryVideo";
 import { ChevronRightIcon } from "../components/Icons";
 
 export default function CollectionPage() {
@@ -87,6 +88,7 @@ export default function CollectionPage() {
             <section className="group relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
               {!videoFailed ? (
                 <CollectionHeroVideo
+                  src={resolveVideoForCategory(category.category_name) ?? undefined}
                   onError={() => setVideoFailed(true)}
                   className="absolute inset-0 h-full w-full object-cover opacity-80"
                 />
