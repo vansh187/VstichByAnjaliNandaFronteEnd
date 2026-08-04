@@ -90,7 +90,7 @@ export default function CollectionPage() {
                 <CollectionHeroVideo
                   src={resolveVideoForCategory(category.category_name) ?? undefined}
                   onError={() => setVideoFailed(true)}
-                  className="absolute inset-0 h-full w-full object-cover opacity-80"
+                  className="absolute inset-0 h-full w-full object-contain opacity-80"
                 />
               ) : (
                 <CategoryVisual

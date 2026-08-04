@@ -8,6 +8,7 @@ const CATEGORY_VIDEOS = [
   { keywords: ["cord set", "co-ord", "coord"], src: "/static/cord-set/cord-set-hero.mp4" },
   { keywords: ["shirt"], src: "/static/shirts/shirts-hero.mp4" },
   { keywords: ["cape"], src: "/static/capes/capes-hero.mp4" },
+  { keywords: ["suit"], src: "/static/suits/suits-hero.mp4" },
 ];
 
 export function resolveVideoForCategory(categoryName = "") {

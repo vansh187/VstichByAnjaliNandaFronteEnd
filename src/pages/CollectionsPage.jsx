@@ -88,7 +88,7 @@ export default function CollectionsPage() {
           {!videoFailed && (
             <CollectionHeroVideo
               onError={() => setVideoFailed(true)}
-              className="absolute inset-0 h-full w-full object-cover opacity-70"
+              className="absolute inset-0 h-full w-full object-contain opacity-70"
             />
           )}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_40%)]" />
