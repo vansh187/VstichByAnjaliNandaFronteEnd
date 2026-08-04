@@ -149,11 +149,9 @@ export default function ProductDetailPage() {
     [images.length],
   );
 
-  const gallerySwipe = useSwipe(
-    () => goToImage(1),
-    () => goToImage(-1),
-  );
-  const lightboxSwipe = useSwipe(
+  // Shared by both the gallery button and the lightbox overlay - they swipe
+  // to the same next/previous image, so one instance covers both.
+  const imageSwipe = useSwipe(
     () => goToImage(1),
     () => goToImage(-1),
   );
@@ -246,8 +244,8 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={() => activeImage?.image_url && !imgError && setLightboxOpen(true)}
-                    onTouchStart={gallerySwipe.onTouchStart}
-                    onTouchEnd={gallerySwipe.onTouchEnd}
+                    onTouchStart={imageSwipe.onTouchStart}
+                    onTouchEnd={imageSwipe.onTouchEnd}
                     aria-label="View larger image"
                     className="h-full w-full"
                   >
@@ -484,8 +482,8 @@ export default function ProductDetailPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-6"
           onClick={closeLightbox}
-          onTouchStart={lightboxSwipe.onTouchStart}
-          onTouchEnd={lightboxSwipe.onTouchEnd}
+          onTouchStart={imageSwipe.onTouchStart}
+          onTouchEnd={imageSwipe.onTouchEnd}
         >
           <button
             type="button"
