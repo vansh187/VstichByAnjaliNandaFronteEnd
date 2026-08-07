@@ -65,6 +65,14 @@ export function ChevronLeftIcon(props) {
   );
 }
 
+export function ChevronDownIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" {...base} {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
 export function CheckCircleIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...base} {...props}>

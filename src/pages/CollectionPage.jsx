@@ -13,7 +13,7 @@ import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import CategoryVisual from "../components/CategoryVisual";
 import CollectionHeroVideo from "../components/CollectionHeroVideo";
-import { resolveVideoForCategory } from "../utils/categoryVideo";
+import { resolveVideoForCategory, withBrandPrefix } from "../utils/categoryVideo";
 import { ChevronRightIcon } from "../components/Icons";
 
 export default function CollectionPage() {
@@ -107,10 +107,10 @@ export default function CollectionPage() {
                       Home
                     </Link>
                     <ChevronRightIcon width="12" height="12" />
-                    <span className="text-cream">{category.category_name}</span>
+                    <span className="text-cream">{withBrandPrefix(category.category_name)}</span>
                   </nav>
                   <h1 className="mt-3 font-display text-4xl sm:text-5xl">
-                    {category.category_name}
+                    {withBrandPrefix(category.category_name)}
                   </h1>
                   <p className="mt-4 font-display text-xl italic leading-snug text-cream/90 sm:text-2xl">
                     “{getCategoryQuote(category.category_name)}”

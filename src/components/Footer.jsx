@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { InstagramIcon, WhatsappIcon } from "./Icons";
+import { withBrandPrefix } from "../utils/categoryVideo";
 
 const helpLinks = [
   { label: "Track Your Order", to: "/track-order" },
@@ -50,7 +51,7 @@ export default function Footer() {
                     to={`/collections/${category.vstitch_category_id}`}
                     className="link-underline transition-colors hover:text-cream"
                   >
-                    {category.category_name}
+                    {withBrandPrefix(category.category_name)}
                   </Link>
                 </li>
               ))}
