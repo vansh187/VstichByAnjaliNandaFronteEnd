@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import { useOverlay } from "../hooks/useOverlay";
 import { useCategories } from "../hooks/useCategories";
-import { useClickOutside } from "../hooks/useClickOutside";
 import AccountMenu from "./AccountMenu";
 import { BagIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
@@ -20,21 +19,22 @@ const navLinks = [
 
 function CollectionsNavItem() {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
   const { categories } = useCategories();
-  useClickOutside(ref, open, () => setOpen(false));
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Link
+        to="/collections"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
         className="link-underline flex items-center gap-1 font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
       >
         Collections
         <ChevronDownIcon width="14" height="14" className={open ? "rotate-180" : ""} />
-      </button>
+      </Link>
       {open && (
         <div className="absolute left-0 top-full z-30 mt-4 w-60 border border-sand-dark bg-cream py-2 shadow-xl">
           <Link
