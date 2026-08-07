@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { InstagramIcon, WhatsappIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
+import TermsOfServiceModal from "./TermsOfServiceModal";
 
 const helpLinks = [
   { label: "Track Your Order", to: "/track-order" },
   { label: "FAQs", to: "/faqs" },
 ];
-const companyLinks = ["Our Story", "The Atelier", "Careers", "Press", "Sustainability", "Terms of Service", "Privacy Policy"];
+const companyLinks = ["Our Story", "Careers", "Terms of Service", "Privacy Policy"];
 
 export default function Footer() {
   const year = new Date().getFullYear();
   const { categories } = useCategories();
+  const [termsOpen, setTermsOpen] = useState(false);
 
   return (
     <footer className="border-t border-sand-dark bg-ink text-cream">
@@ -102,13 +105,25 @@ export default function Footer() {
             <div className="mt-6">
               <h3 className="text-xs font-medium tracking-[0.2em] text-gold-light uppercase">Company</h3>
               <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-cream/70">
-                {companyLinks.map((link) => (
-                  <li key={link}>
-                    <a href="#" className="link-underline transition-colors hover:text-cream">
-                      {link}
-                    </a>
-                  </li>
-                ))}
+                {companyLinks.map((link) =>
+                  link === "Terms of Service" ? (
+                    <li key={link}>
+                      <button
+                        type="button"
+                        onClick={() => setTermsOpen(true)}
+                        className="link-underline transition-colors hover:text-cream"
+                      >
+                        {link}
+                      </button>
+                    </li>
+                  ) : (
+                    <li key={link}>
+                      <a href="#" className="link-underline transition-colors hover:text-cream">
+                        {link}
+                      </a>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           </div>
@@ -127,6 +142,8 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {termsOpen && <TermsOfServiceModal onClose={() => setTermsOpen(false)} />}
     </footer>
   );
 }

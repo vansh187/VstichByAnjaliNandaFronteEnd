@@ -23,3 +23,9 @@ export function requestPasswordResetOtp(payload) {
 export function confirmPasswordReset(payload) {
   return post("/password-reset/confirm", payload);
 }
+
+// Updates the logged-in user's saved location (vstitch_users table) —
+// used at login, since signup already carries location in its own payload.
+export function updateUserLocation(payload, token) {
+  return post("/users/location", payload, token);
+}

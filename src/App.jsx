@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
+import { initLandingLocationCapture } from "./lib/locationCapture";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
@@ -21,6 +23,13 @@ function App() {
   const location = useLocation();
   const backgroundLocation = location.state?.backgroundLocation;
   const routedLocation = backgroundLocation || location;
+
+  // Fires once per app load (this effect never re-runs across route
+  // changes) so the geolocation prompt shows up right when the site opens,
+  // not later when a shopper happens to open the login/signup card.
+  useEffect(() => {
+    initLandingLocationCapture();
+  }, []);
 
   return (
     <>
