@@ -1,6 +1,7 @@
 import { Route, Routes, useLocation } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
+import GoogleAuthCallback from "./pages/GoogleAuthCallback";
 import HomePage from "./pages/HomePage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
@@ -28,6 +29,7 @@ function App() {
       <Routes location={backgroundLocation || location}>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<GoogleAuthCallback />} />
         <Route
           path="/home"
           element={

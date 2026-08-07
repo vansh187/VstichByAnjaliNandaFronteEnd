@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "./authContextObject";
-import {
-  login as loginRequest,
-  signup as signupRequest,
-  googleLogin as googleLoginRequest,
-} from "../lib/api";
+import { login as loginRequest, signup as signupRequest } from "../lib/api";
 import { setUnauthorizedHandler } from "../lib/authEvents";
 import { isTokenExpired } from "../lib/jwt";
 
@@ -55,11 +51,14 @@ export function AuthProvider({ children }) {
     [persist],
   );
 
-  const loginWithGoogle = useCallback(
-    async (idToken) => {
-      const data = await googleLoginRequest({ id_token: idToken });
-      persist({ id: data.vstitch_user_id, username: data.vstitch_user_name }, data.access_token);
-      return data;
+  // The Google *redirect* flow (unlike password login or the old GIS-widget
+  // credential exchange) never gives our JS a token to POST anywhere - the
+  // backend does the whole OAuth dance server-side and hands back a
+  // ready-made session in the URL fragment it redirects to. This just files
+  // that session away the same way persist() does for every other login path.
+  const applyGoogleSession = useCallback(
+    (accessToken, vstitchUserId, vstitchUserName) => {
+      persist({ id: vstitchUserId, username: vstitchUserName }, accessToken);
     },
     [persist],
   );
@@ -88,11 +87,11 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token),
       ready: true,
       login,
-      loginWithGoogle,
+      applyGoogleSession,
       signup,
       logout,
     }),
-    [user, token, login, loginWithGoogle, signup, logout],
+    [user, token, login, applyGoogleSession, signup, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
