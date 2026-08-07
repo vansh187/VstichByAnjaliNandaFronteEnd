@@ -2,6 +2,7 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import HomePage from "./pages/HomePage";
+import SummerLuxePage from "./pages/SummerLuxePage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -39,6 +40,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/summer-luxe" element={<SummerLuxePage />} />
         {/* keyed by path so switching categories remounts the page — a
             clean useProducts/useCategories state (loading, items, cursor)
             rather than trying to reset it mid-effect */}
