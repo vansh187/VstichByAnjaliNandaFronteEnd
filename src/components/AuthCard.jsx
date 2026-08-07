@@ -1,17 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
-import { API_BASE_URL } from "../lib/apiConfig";
-
-// Plain server-side redirect, not a fetch/SDK call - the backend owns the
-// whole OAuth exchange and lands the user back on /auth/callback with a
-// ready-made session. This works in Guest/Incognito, unlike the old
-// Google Identity Services widget it replaced (GIS depends on FedCM,
-// which Chrome blocks by design in those profiles).
-const GOOGLE_LOGIN_URL = `${API_BASE_URL}/auth/google/login`;
 
 const emptyFields = {
   first_name: "",
@@ -62,6 +55,39 @@ export default function AuthCard({ onClose }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState("");
+
+  const handleGoogleCredential = useCallback(
+    async (idToken) => {
+      setGoogleError("");
+      setFormError("");
+      setGoogleLoading(true);
+      try {
+        await auth.loginWithGoogle(idToken);
+        const redirectTo = location.state?.from?.pathname || "/home";
+        navigate(redirectTo, { replace: true });
+      } catch (err) {
+        setGoogleError(
+          err.message || "Google sign-in failed. Please try again or use your email.",
+        );
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [auth, location, navigate],
+  );
+
+  const { promptSignIn: promptGoogleSignIn } = useGoogleSignIn(handleGoogleCredential);
+
+  const handleGoogleClick = () => {
+    setGoogleError("");
+    promptGoogleSignIn(() => {
+      setGoogleError(
+        "Google sign-in isn't available right now. Please continue with your email, or try again in a moment.",
+      );
+    });
+  };
 
   const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
 
@@ -256,13 +282,18 @@ export default function AuthCard({ onClose }) {
           <span className="h-px flex-1 bg-sand-dark" />
         </div>
 
-        <a
-          href={GOOGLE_LOGIN_URL}
-          className="flex w-full items-center justify-center gap-3 border border-sand-dark bg-cream py-3.5 text-sm font-medium text-ink transition-colors hover:bg-sand/50"
+        <button
+          type="button"
+          onClick={handleGoogleClick}
+          disabled={googleLoading}
+          className="flex w-full items-center justify-center gap-3 border border-sand-dark bg-cream py-3.5 text-sm font-medium text-ink transition-colors hover:bg-sand/50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <GoogleIcon />
-          Continue with Google
-        </a>
+          {googleLoading ? "Please wait…" : "Continue with Google"}
+        </button>
+        {googleError && (
+          <p className="mt-3 text-center text-xs text-red-700">{googleError}</p>
+        )}
 
         <p className="mt-7 text-center text-sm text-charcoal/70">
           {mode === "login" ? (
