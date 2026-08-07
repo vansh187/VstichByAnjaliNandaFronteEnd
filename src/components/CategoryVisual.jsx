@@ -15,7 +15,7 @@ export default function CategoryVisual({ category, className = "" }) {
         alt={category.category_name}
         loading="lazy"
         onError={() => setImgError(true)}
-        className={`object-cover ${className}`}
+        className={`object-cover object-top ${className}`}
       />
     );
   }

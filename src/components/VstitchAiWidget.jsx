@@ -319,7 +319,7 @@ export default function VstitchAiWidget() {
             onClick={openFromTooltip}
             className="px-4 py-3 text-left text-sm leading-snug text-charcoal"
           >
-            Hi, I'm VStitch AI — can I help you with a customization?
+            Hi, I'm VStitch Assist — can I help you with a customization?
           </button>
         </div>
       )}

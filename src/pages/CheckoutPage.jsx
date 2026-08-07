@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
@@ -94,10 +94,6 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [order, setOrder] = useState(null);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
 

@@ -6,7 +6,9 @@ function normalizeError(status, data) {
     const fieldErrors = {};
     data.detail.forEach((err) => {
       const field = err.loc?.[err.loc.length - 1];
-      if (field) fieldErrors[field] = err.msg;
+      // Pydantic prefixes custom @validator messages with "Value error, "
+      // before the actual text - strip it so the UI shows a clean sentence.
+      if (field) fieldErrors[field] = err.msg?.replace(/^Value error,\s*/i, "");
     });
     const error = new Error("Please check the highlighted fields and try again.");
     error.fieldErrors = fieldErrors;

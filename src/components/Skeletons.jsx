@@ -23,12 +23,12 @@ export function ProductGridSkeleton({ count = 8 }) {
 }
 
 export function CategoryTileSkeleton() {
-  return <div className="aspect-[3/4] animate-pulse bg-sand-dark/60" />;
+  return <div className="aspect-[4/5] animate-pulse bg-sand-dark/60" />;
 }
 
-export function CategoryGridSkeleton({ count = 4 }) {
+export function CategoryGridSkeleton({ count = 5 }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
       {Array.from({ length: count }).map((_, i) => (
         <CategoryTileSkeleton key={i} />
       ))}

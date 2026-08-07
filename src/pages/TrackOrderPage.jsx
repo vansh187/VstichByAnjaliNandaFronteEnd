@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
@@ -34,10 +34,6 @@ export default function TrackOrderPage() {
   const [error, setError] = useState("");
   const [notShipped, setNotShipped] = useState(false);
   const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

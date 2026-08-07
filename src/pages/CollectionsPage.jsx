@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
@@ -11,6 +11,50 @@ import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import { ProductGridSkeleton } from "../components/Skeletons";
 import CollectionHeroVideo from "../components/CollectionHeroVideo";
+import { ChevronDownIcon } from "../components/Icons";
+import { withBrandPrefix } from "../utils/categoryVideo";
+
+// Lets a shopper jump straight to one category's dedicated page (full stock,
+// hero banner) instead of scrolling the "every collection stacked" list
+// below - e.g. picking "Shirts" opens only /collections/{shirts-id}, not a
+// filtered view of this page.
+function CategoryDropdown({ categories }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useClickOutside(ref, open, () => setOpen(false));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-full border border-cream/20 bg-cream/10 px-4 py-2 text-sm tracking-[0.2em] text-cream/90 uppercase backdrop-blur-sm transition-colors hover:bg-cream/20"
+      >
+        Shop by Category
+        <ChevronDownIcon width="16" height="16" className={open ? "rotate-180" : ""} />
+      </button>
+      {open && (
+        // Opens upward, not downward: the trigger sits at the bottom edge of
+        // the hero section, which has overflow-hidden for the background
+        // video - a panel opening below it would render past that boundary
+        // and get silently clipped.
+        <div className="absolute right-0 bottom-full z-20 mb-3 max-h-80 w-64 overflow-y-auto border border-sand-dark bg-cream py-2 text-left shadow-xl">
+          {categories.map((cat) => (
+            <Link
+              key={cat.vstitch_category_id}
+              to={`/collections/${cat.vstitch_category_id}`}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
+            >
+              {withBrandPrefix(cat.category_name)}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CategoryProductsSection({ category, index }) {
   const { items, loading, error, reload } = useProducts({
@@ -27,7 +71,9 @@ function CategoryProductsSection({ category, index }) {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] tracking-[0.24em] text-charcoal/60 uppercase">Collection</p>
-          <h2 className="mt-1 font-display text-2xl text-ink">{category.category_name}</h2>
+          <h2 className="mt-1 font-display text-2xl text-ink">
+            {withBrandPrefix(category.category_name)}
+          </h2>
         </div>
         <Link
           to={`/collections/${category.vstitch_category_id}`}
@@ -75,10 +121,6 @@ export default function CollectionsPage() {
   const { categories, loading, error, reload } = useCategories();
   const [videoFailed, setVideoFailed] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
     <div ref={revealRef}>
       <AnnouncementBar />
@@ -88,7 +130,7 @@ export default function CollectionsPage() {
           {!videoFailed && (
             <CollectionHeroVideo
               onError={() => setVideoFailed(true)}
-              className="absolute inset-0 h-full w-full object-cover opacity-70"
+              className="absolute inset-0 h-full w-full object-contain opacity-70"
             />
           )}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_40%)]" />
@@ -106,9 +148,7 @@ export default function CollectionsPage() {
                 including colors, sizes, and add-to-cart options.
               </p>
             </div>
-            <div className="rounded-full border border-cream/20 bg-cream/10 px-4 py-2 text-sm tracking-[0.2em] text-cream/80 uppercase backdrop-blur-sm">
-              {categories.length} curated categories
-            </div>
+            {categories.length > 0 && <CategoryDropdown categories={categories} />}
           </div>
         </section>
 

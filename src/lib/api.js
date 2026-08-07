@@ -11,3 +11,15 @@ export function login(payload) {
 export function googleLogin(payload) {
   return post("/auth/google", payload);
 }
+
+export function subscribe(payload) {
+  return post("/subscribe", payload);
+}
+
+export function requestPasswordResetOtp(payload) {
+  return post("/password-reset/request", payload);
+}
+
+export function confirmPasswordReset(payload) {
+  return post("/password-reset/confirm", payload);
+}

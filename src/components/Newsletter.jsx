@@ -1,13 +1,32 @@
 import { useState } from "react";
+import { subscribe } from "../lib/api";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return;
-    setSubmitted(true);
+    if (loading) return;
+
+    const trimmedEmail = email.trim();
+    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      await subscribe({ email: trimmedEmail });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.fieldErrors?.email || err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,31 +48,36 @@ export default function Newsletter() {
 
         {submitted ? (
           <p className="mt-4 font-display text-lg italic text-gold">
-            Thank you — check your inbox for your welcome offer.
+            Thank you for subscribing — your welcome offer is on its way.
           </p>
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="mt-4 flex w-full max-w-md flex-col gap-3 sm:flex-row"
+            noValidate
+            className="mt-4 flex w-full max-w-md flex-col gap-3"
           >
-            <label htmlFor="newsletter-email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="newsletter-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full border border-sand-dark bg-cream px-5 py-3.5 text-sm text-ink placeholder:text-charcoal/50 focus:border-gold focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="shrink-0 bg-ink px-7 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
-            >
-              Subscribe
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <label htmlFor="newsletter-email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="newsletter-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full border border-sand-dark bg-cream px-5 py-3.5 text-sm text-ink placeholder:text-charcoal/50 focus:border-gold focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="shrink-0 bg-ink px-7 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Subscribing…" : "Subscribe"}
+              </button>
+            </div>
+            {error && <p className="text-sm text-red-700">{error}</p>}
           </form>
         )}
       </div>

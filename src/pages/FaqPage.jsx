@@ -137,8 +137,6 @@ export default function FaqPage() {
   const [openKey, setOpenKey] = useState("Orders & Shipping-0");
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-
     const previousTitle = document.title;
     document.title = PAGE_TITLE;
 

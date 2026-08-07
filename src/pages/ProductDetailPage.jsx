@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
@@ -9,6 +9,7 @@ import SizeGuideModal from "../components/SizeGuideModal";
 import CustomizationModal from "../components/CustomizationModal";
 import {
   BagIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   CheckCircleIcon,
   CloseIcon,
@@ -18,6 +19,7 @@ import {
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
+import { useSwipe } from "../hooks/useSwipe";
 import { getProductDetail } from "../lib/catalogApi";
 import { formatINR } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
@@ -54,8 +56,6 @@ export default function ProductDetailPage() {
   // product id in the URL changes, so every piece of state above already
   // starts fresh — this effect only needs to run the fetch itself.
   useEffect(() => {
-    window.scrollTo(0, 0);
-
     if (!validId) return undefined;
 
     let active = true;
@@ -136,6 +136,34 @@ export default function ProductDetailPage() {
 
   const activeImage = images[activeImageIndex] ?? images[0] ?? null;
 
+  // Wraps around in both directions so swiping/arrow-clicking past the last
+  // image loops back to the first, same as the home hero's slide nav.
+  const goToImage = useCallback(
+    (delta) => {
+      if (images.length === 0) return;
+      setActiveImageIndex((i) => (i + delta + images.length) % images.length);
+      setImgError(false);
+    },
+    [images.length],
+  );
+
+  // Shared by both the gallery button and the lightbox overlay - they swipe
+  // to the same next/previous image, so one instance covers both.
+  const imageSwipe = useSwipe(
+    () => goToImage(1),
+    () => goToImage(-1),
+  );
+
+  useEffect(() => {
+    if (!lightboxOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") goToImage(1);
+      else if (e.key === "ArrowLeft") goToImage(-1);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [lightboxOpen, goToImage]);
+
   const addToCart = () => {
     if (!canOrder) return false;
     for (let i = 0; i < qty; i += 1) {
@@ -210,27 +238,62 @@ export default function ProductDetailPage() {
 
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
               <div>
-                <button
-                  type="button"
-                  onClick={() => activeImage?.image_url && !imgError && setLightboxOpen(true)}
-                  aria-label="View larger image"
-                  className="aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs"
-                >
-                  {activeImage?.image_url && !imgError ? (
-                    <img
-                      src={activeImage.image_url}
-                      alt={detail.product_name}
-                      onError={() => setImgError(true)}
-                      className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  ) : (
-                    <Swatch
-                      tone={getCategoryTone(detail.category_id)}
-                      monogram="VN"
-                      className="h-full w-full"
-                    />
+                <div className="group relative aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => activeImage?.image_url && !imgError && setLightboxOpen(true)}
+                    onTouchStart={imageSwipe.onTouchStart}
+                    onTouchEnd={imageSwipe.onTouchEnd}
+                    aria-label="View larger image"
+                    className="h-full w-full"
+                  >
+                    {activeImage?.image_url && !imgError ? (
+                      <img
+                        src={activeImage.image_url}
+                        alt={detail.product_name}
+                        onError={() => setImgError(true)}
+                        className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    ) : (
+                      <Swatch
+                        tone={getCategoryTone(detail.category_id)}
+                        monogram="VN"
+                        className="h-full w-full"
+                      />
+                    )}
+                  </button>
+
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="Previous image"
+                        onClick={() => goToImage(-1)}
+                        className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-ink/40 p-1.5 text-cream opacity-0 transition-opacity duration-200 hover:bg-ink/60 group-hover:opacity-100 sm:flex"
+                      >
+                        <ChevronLeftIcon width="16" height="16" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Next image"
+                        onClick={() => goToImage(1)}
+                        className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-ink/40 p-1.5 text-cream opacity-0 transition-opacity duration-200 hover:bg-ink/60 group-hover:opacity-100 sm:flex"
+                      >
+                        <ChevronRightIcon width="16" height="16" />
+                      </button>
+                      <div className="pointer-events-none absolute inset-x-0 bottom-3 flex items-center justify-center gap-1.5">
+                        {images.map((image, index) => (
+                          <span
+                            key={image.image_url}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              index === activeImageIndex ? "w-5 bg-cream" : "w-1.5 bg-cream/50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
                   )}
-                </button>
+                </div>
 
                 {images.length > 1 && (
                   <div className="mt-4 flex max-w-[280px] gap-3 overflow-x-auto pb-1 sm:max-w-xs">
@@ -417,6 +480,8 @@ export default function ProductDetailPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-6"
           onClick={closeLightbox}
+          onTouchStart={imageSwipe.onTouchStart}
+          onTouchEnd={imageSwipe.onTouchEnd}
         >
           <button
             type="button"
@@ -426,12 +491,67 @@ export default function ProductDetailPage() {
           >
             <CloseIcon width="28" height="28" />
           </button>
+
+          {images.length > 1 && (
+            <p className="absolute left-1/2 top-5 -translate-x-1/2 text-sm font-medium tracking-widest text-cream/80">
+              {activeImageIndex + 1} / {images.length}
+            </p>
+          )}
+
+          {images.length > 1 && (
+            <button
+              type="button"
+              aria-label="Previous image"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToImage(-1);
+              }}
+              className="absolute left-3 top-1/2 hidden -translate-y-1/2 text-cream/80 transition-colors hover:text-cream sm:block"
+            >
+              <ChevronLeftIcon width="32" height="32" />
+            </button>
+          )}
+
           <img
             src={activeImage.image_url}
             alt={detail?.product_name}
             onClick={(e) => e.stopPropagation()}
             className="max-h-full max-w-full object-contain"
           />
+
+          {images.length > 1 && (
+            <button
+              type="button"
+              aria-label="Next image"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToImage(1);
+              }}
+              className="absolute right-3 top-1/2 hidden -translate-y-1/2 text-cream/80 transition-colors hover:text-cream sm:block"
+            >
+              <ChevronRightIcon width="32" height="32" />
+            </button>
+          )}
+
+          {images.length > 1 && (
+            <div className="absolute inset-x-0 bottom-6 flex items-center justify-center gap-2">
+              {images.map((image, index) => (
+                <button
+                  key={image.image_url}
+                  type="button"
+                  aria-label={`Go to image ${index + 1}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImageIndex(index);
+                    setImgError(false);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === activeImageIndex ? "w-6 bg-cream" : "w-1.5 bg-cream/50 hover:bg-cream/80"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

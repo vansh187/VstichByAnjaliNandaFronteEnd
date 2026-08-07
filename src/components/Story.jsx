@@ -1,5 +1,3 @@
-import Swatch from "./Swatch";
-
 export default function Story() {
   return (
     <section id="story" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
@@ -8,10 +6,10 @@ export default function Story() {
           data-reveal
           className="reveal relative aspect-[4/5] overflow-hidden lg:order-2"
         >
-          <Swatch
-            tone="from-[#5a3d17] via-[#3a332c] to-[#1c1815]"
-            monogram="AN"
-            className="absolute inset-0 h-full w-full"
+          <img
+            src="/static/brand/founder.jpg"
+            alt="Anjali Nanda, Founder & Lead Designer"
+            className="absolute inset-0 h-full w-full object-cover object-top"
           />
           <div className="absolute bottom-6 left-6 right-6 border border-cream/25 bg-ink/40 p-5 backdrop-blur-sm">
             <p className="font-display text-xl italic text-cream">

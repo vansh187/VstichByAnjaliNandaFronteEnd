@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
@@ -13,6 +13,7 @@ import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import CategoryVisual from "../components/CategoryVisual";
 import CollectionHeroVideo from "../components/CollectionHeroVideo";
+import { resolveVideoForCategory, withBrandPrefix } from "../utils/categoryVideo";
 import { ChevronRightIcon } from "../components/Icons";
 
 export default function CollectionPage() {
@@ -38,10 +39,6 @@ export default function CollectionPage() {
     loadMore,
     reload: reloadProducts,
   } = useProducts({ categoryId: Number.isFinite(categoryId) ? categoryId : undefined, limit: 24 });
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [categoryId]);
 
   const notFound =
     !categoriesLoading && !categoriesError && Number.isFinite(categoryId) && !category;
@@ -87,8 +84,9 @@ export default function CollectionPage() {
             <section className="group relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
               {!videoFailed ? (
                 <CollectionHeroVideo
+                  src={resolveVideoForCategory(category.category_name) ?? undefined}
                   onError={() => setVideoFailed(true)}
-                  className="absolute inset-0 h-full w-full object-cover opacity-80"
+                  className="absolute inset-0 h-full w-full object-contain opacity-80"
                 />
               ) : (
                 <CategoryVisual
@@ -105,10 +103,10 @@ export default function CollectionPage() {
                       Home
                     </Link>
                     <ChevronRightIcon width="12" height="12" />
-                    <span className="text-cream">{category.category_name}</span>
+                    <span className="text-cream">{withBrandPrefix(category.category_name)}</span>
                   </nav>
                   <h1 className="mt-3 font-display text-4xl sm:text-5xl">
-                    {category.category_name}
+                    {withBrandPrefix(category.category_name)}
                   </h1>
                   <p className="mt-4 font-display text-xl italic leading-snug text-cream/90 sm:text-2xl">
                     “{getCategoryQuote(category.category_name)}”
