@@ -1,16 +1,64 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import { useOverlay } from "../hooks/useOverlay";
+import { useCategories } from "../hooks/useCategories";
+import { useClickOutside } from "../hooks/useClickOutside";
 import AccountMenu from "./AccountMenu";
-import { BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
+import { BagIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
+import { withBrandPrefix } from "../utils/categoryVideo";
 
+// Mobile drawer only - it lists these as plain links (no room for a nested
+// flyout there), so "Collections" just goes to the /collections overview.
+// Desktop gets the dropdown version, CollectionsNavItem, below.
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Collections", href: "/collections" },
   { label: "Our Story", href: "/our-story" },
 ];
+
+function CollectionsNavItem() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const { categories } = useCategories();
+  useClickOutside(ref, open, () => setOpen(false));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="link-underline flex items-center gap-1 font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+      >
+        Collections
+        <ChevronDownIcon width="14" height="14" className={open ? "rotate-180" : ""} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-4 w-60 border border-sand-dark bg-cream py-2 shadow-xl">
+          <Link
+            to="/collections"
+            onClick={() => setOpen(false)}
+            className="block border-b border-sand-dark/70 px-4 py-2.5 text-sm font-medium text-ink hover:bg-sand/60"
+          >
+            View All Collections
+          </Link>
+          {categories.map((cat) => (
+            <Link
+              key={cat.vstitch_category_id}
+              to={`/collections/${cat.vstitch_category_id}`}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
+            >
+              {withBrandPrefix(cat.category_name)}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar() {
   const { isAuthenticated, logout } = useAuth();
@@ -62,15 +110,19 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-end gap-6 lg:flex lg:ml-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              to={link.href}
-              className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
-            >
-              {link.label}
-            </Link>
-          ))}
+          <Link
+            to="/"
+            className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+          >
+            Home
+          </Link>
+          <CollectionsNavItem />
+          <Link
+            to="/our-story"
+            className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+          >
+            Our Story
+          </Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-3 text-ink sm:gap-5">
