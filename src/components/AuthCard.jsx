@@ -191,7 +191,7 @@ export default function AuthCard({ onClose }) {
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
           {mode === "signup" && (
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="First Name" error={fieldErrors.first_name}>
+              <FormField label="First Name" error={fieldErrors.first_name} required>
                 <input
                   type="text"
                   autoComplete="given-name"
@@ -200,7 +200,7 @@ export default function AuthCard({ onClose }) {
                   className={inputClass(fieldErrors.first_name)}
                 />
               </FormField>
-              <FormField label="Last Name" error={fieldErrors.last_name}>
+              <FormField label="Last Name" error={fieldErrors.last_name} required>
                 <input
                   type="text"
                   autoComplete="family-name"
@@ -213,7 +213,7 @@ export default function AuthCard({ onClose }) {
           )}
 
           {mode === "signup" && (
-            <FormField label="Email" error={fieldErrors.email}>
+            <FormField label="Email" error={fieldErrors.email} required>
               <input
                 type="email"
                 autoComplete="email"
@@ -225,7 +225,7 @@ export default function AuthCard({ onClose }) {
           )}
 
           {mode === "signup" && (
-            <FormField label="Phone Number" error={fieldErrors.phone_number}>
+            <FormField label="Phone Number" error={fieldErrors.phone_number} required>
               <input
                 type="tel"
                 autoComplete="tel"
@@ -237,7 +237,7 @@ export default function AuthCard({ onClose }) {
             </FormField>
           )}
 
-          <FormField label="Username" error={fieldErrors.vstitch_user_name}>
+          <FormField label="Username" error={fieldErrors.vstitch_user_name} required>
             <input
               type="text"
               autoComplete="username"
@@ -247,7 +247,7 @@ export default function AuthCard({ onClose }) {
             />
           </FormField>
 
-          <FormField label="Password" error={fieldErrors.password}>
+          <FormField label="Password" error={fieldErrors.password} required>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
