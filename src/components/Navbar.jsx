@@ -13,6 +13,7 @@ import { withBrandPrefix } from "../utils/categoryVideo";
 // Desktop gets the dropdown version, CollectionsNavItem, below.
 const navLinks = [
   { label: "Home", href: "/" },
+  { label: "Summer Luxe", href: "/summer-luxe" },
   { label: "Collections", href: "/collections" },
   { label: "Our Story", href: "/our-story" },
 ];
@@ -122,6 +123,12 @@ export default function Navbar() {
             className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
           >
             Home
+          </Link>
+          <Link
+            to="/summer-luxe"
+            className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+          >
+            Summer Luxe
           </Link>
           <CollectionsNavItem />
           <Link
