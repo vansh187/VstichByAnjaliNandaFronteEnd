@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
 import { getCategoryQuote } from "../utils/categoryTheme";
+import { filterByColors, getAvailableColors, sortProducts } from "../utils/productFilters";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
+import ProductFilterBar from "../components/ProductFilterBar";
 import { ProductGridSkeleton } from "../components/Skeletons";
 import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
@@ -21,6 +23,9 @@ export default function CollectionPage() {
   const categoryId = Number(categoryIdParam);
   const revealRef = useReveal();
   const [videoFailed, setVideoFailed] = useState(false);
+  const [sortBy, setSortBy] = useState("featured");
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [selectedColors, setSelectedColors] = useState([]);
 
   const {
     categories,
@@ -38,7 +43,28 @@ export default function CollectionPage() {
     hasMore,
     loadMore,
     reload: reloadProducts,
-  } = useProducts({ categoryId: Number.isFinite(categoryId) ? categoryId : undefined, limit: 24 });
+  } = useProducts({
+    categoryId: Number.isFinite(categoryId) ? categoryId : undefined,
+    inStockOnly,
+    limit: 24,
+  });
+
+  const availableColors = useMemo(() => getAvailableColors(items), [items]);
+  const displayedItems = useMemo(
+    () => sortProducts(filterByColors(items, selectedColors), sortBy),
+    [items, selectedColors, sortBy],
+  );
+
+  const toggleColor = (color) =>
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
+    );
+
+  const clearFilters = () => {
+    setSortBy("featured");
+    setInStockOnly(false);
+    setSelectedColors([]);
+  };
 
   const notFound =
     !categoriesLoading && !categoriesError && Number.isFinite(categoryId) && !category;
@@ -136,8 +162,29 @@ export default function CollectionPage() {
 
               {!productsLoading && !productsError && items.length > 0 && (
                 <>
+                  <ProductFilterBar
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    inStockOnly={inStockOnly}
+                    onInStockChange={setInStockOnly}
+                    colors={availableColors}
+                    selectedColors={selectedColors}
+                    onToggleColor={toggleColor}
+                    onClearFilters={clearFilters}
+                    resultCount={displayedItems.length}
+                  />
+
+                  {displayedItems.length === 0 && (
+                    <StateNotice
+                      title="No products match your filters"
+                      description="Try clearing a filter to see more pieces."
+                      actionLabel="Clear Filters"
+                      onAction={clearFilters}
+                    />
+                  )}
+
                   <div className="grid grid-cols-2 gap-x-5 gap-y-12 md:grid-cols-4">
-                    {items.map((product, i) => (
+                    {displayedItems.map((product, i) => (
                       <ProductCard
                         key={product.vstitch_product_id}
                         product={product}
