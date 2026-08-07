@@ -2,9 +2,12 @@ import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
+import { requestPasswordResetOtp, confirmPasswordReset } from "../lib/api";
 import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
+
+const emailPattern = /^\S+@\S+\.\S+$/;
 
 const emptyFields = {
   first_name: "",
@@ -21,7 +24,7 @@ function validate(mode, fields) {
   if (mode === "signup") {
     if (fields.first_name.trim().length < 1) errors.first_name = "First name is required.";
     if (fields.last_name.trim().length < 1) errors.last_name = "Last name is required.";
-    if (!/^\S+@\S+\.\S+$/.test(fields.email)) errors.email = "Enter a valid email address.";
+    if (!emailPattern.test(fields.email)) errors.email = "Enter a valid email address.";
     if (!fields.phone_number.trim()) {
       errors.phone_number = "Phone number is required.";
     } else if (!/^\+?\d{7,15}$/.test(fields.phone_number.trim())) {
@@ -57,6 +60,16 @@ export default function AuthCard({ onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState("");
+
+  // "forgot" mode has two steps: request a code, then submit it with a new
+  // password. Kept as separate state from `fields` above since it's tracking
+  // a different thing (an email to send a code to, not signup/login values).
+  const [forgotStep, setForgotStep] = useState("request");
+  const [resetEmail, setResetEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const handleGoogleCredential = useCallback(
     async (idToken) => {
@@ -96,6 +109,75 @@ export default function AuthCard({ onClose }) {
     setFieldErrors({});
     setFormError("");
     setSuccessMessage("");
+    setForgotStep("request");
+    setResetEmail("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+  };
+
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    const trimmedEmail = resetEmail.trim();
+    if (!emailPattern.test(trimmedEmail)) {
+      setFieldErrors({ email: "Enter a valid email address." });
+      return;
+    }
+
+    setFieldErrors({});
+    setFormError("");
+    setLoading(true);
+    try {
+      await requestPasswordResetOtp({ email: trimmedEmail });
+      setForgotStep("verify");
+      setSuccessMessage(`We've sent a 6-digit code to ${trimmedEmail}.`);
+    } catch (err) {
+      setFormError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const trimmedEmail = resetEmail.trim();
+    setFormError("");
+    setSuccessMessage("");
+    setLoading(true);
+    try {
+      await requestPasswordResetOtp({ email: trimmedEmail });
+      setSuccessMessage(`We've sent a new code to ${trimmedEmail}.`);
+    } catch (err) {
+      setFormError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmReset = async (e) => {
+    e.preventDefault();
+    const errors = {};
+    if (!/^\d{6}$/.test(otp.trim())) errors.otp = "Enter the 6-digit code from your email.";
+    if (newPassword.length < 8) errors.new_password = "Password must be at least 8 characters.";
+    if (confirmNewPassword !== newPassword) errors.confirm_password = "Passwords don't match.";
+    setFieldErrors(errors);
+    setFormError("");
+    if (Object.keys(errors).length > 0) return;
+
+    setLoading(true);
+    try {
+      await confirmPasswordReset({
+        email: resetEmail.trim(),
+        otp: otp.trim(),
+        new_password: newPassword,
+      });
+      switchMode("login");
+      setSuccessMessage("Password updated! Log in below with your new password.");
+    } catch (err) {
+      setFormError(err.message || "Something went wrong. Please try again.");
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -155,9 +237,12 @@ export default function AuthCard({ onClose }) {
           Welcome to VStitch
         </p>
         <h1 className="mt-2 text-center font-display text-3xl text-ink">
-          {mode === "login" ? "Log In to Your Account" : "Create Your Account"}
+          {mode === "login" && "Log In to Your Account"}
+          {mode === "signup" && "Create Your Account"}
+          {mode === "forgot" && "Reset Your Password"}
         </h1>
 
+        {mode !== "forgot" && (
         <div className="mt-7 flex items-center justify-center gap-8">
           {["login", "signup"].map((m) => (
             <button
@@ -174,6 +259,7 @@ export default function AuthCard({ onClose }) {
             </button>
           ))}
         </div>
+        )}
       </div>
 
       <div className="styled-scroll overflow-y-auto px-8 pb-8 pt-6 sm:px-10 sm:pb-10">
@@ -188,6 +274,7 @@ export default function AuthCard({ onClose }) {
           </p>
         )}
 
+        {mode !== "forgot" && (
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
           {mode === "signup" && (
             <div className="grid grid-cols-2 gap-4">
@@ -267,6 +354,16 @@ export default function AuthCard({ onClose }) {
             </div>
           </FormField>
 
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={() => switchMode("forgot")}
+              className="-mt-2 self-end text-xs font-medium text-charcoal/60 transition-colors hover:text-ink"
+            >
+              Forgot password?
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -275,7 +372,98 @@ export default function AuthCard({ onClose }) {
             {loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}
           </button>
         </form>
+        )}
 
+        {mode === "forgot" && forgotStep === "request" && (
+          <form onSubmit={handleRequestOtp} noValidate className="flex flex-col gap-5">
+            <p className="text-sm text-charcoal/70">
+              Enter the email on your account and we'll send you a 6-digit code to reset your
+              password.
+            </p>
+            <FormField label="Email" error={fieldErrors.email} required>
+              <input
+                type="email"
+                autoComplete="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className={inputClass(fieldErrors.email)}
+              />
+            </FormField>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 w-full bg-ink py-3.5 text-sm font-medium tracking-[0.16em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Sending…" : "Send Code"}
+            </button>
+          </form>
+        )}
+
+        {mode === "forgot" && forgotStep === "verify" && (
+          <form onSubmit={handleConfirmReset} noValidate className="flex flex-col gap-5">
+            <FormField label="6-Digit Code" error={fieldErrors.otp} required>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                className={`${inputClass(fieldErrors.otp)} tracking-[0.3em]`}
+              />
+            </FormField>
+
+            <FormField label="New Password" error={fieldErrors.new_password} required>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={`${inputClass(fieldErrors.new_password)} pr-11`}
+                />
+                <button
+                  type="button"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowNewPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-charcoal/60 hover:text-ink"
+                >
+                  {showNewPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </FormField>
+
+            <FormField label="Confirm New Password" error={fieldErrors.confirm_password} required>
+              <input
+                type={showNewPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                className={inputClass(fieldErrors.confirm_password)}
+              />
+            </FormField>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 w-full bg-ink py-3.5 text-sm font-medium tracking-[0.16em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Please wait…" : "Reset Password"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={loading}
+              className="link-underline self-center text-xs font-medium text-charcoal/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Didn't get a code? Resend
+            </button>
+          </form>
+        )}
+
+        {mode !== "forgot" && (
+        <>
         <div className="my-6 flex items-center gap-4">
           <span className="h-px flex-1 bg-sand-dark" />
           <span className="text-xs tracking-widest text-charcoal/50 uppercase">or</span>
@@ -294,9 +482,11 @@ export default function AuthCard({ onClose }) {
         {googleError && (
           <p className="mt-3 text-center text-xs text-red-700">{googleError}</p>
         )}
+        </>
+        )}
 
         <p className="mt-7 text-center text-sm text-charcoal/70">
-          {mode === "login" ? (
+          {mode === "login" && (
             <>
               New to VStitch?{" "}
               <button
@@ -307,7 +497,8 @@ export default function AuthCard({ onClose }) {
                 Create an account
               </button>
             </>
-          ) : (
+          )}
+          {mode === "signup" && (
             <>
               Already have an account?{" "}
               <button
@@ -318,6 +509,15 @@ export default function AuthCard({ onClose }) {
                 Log in
               </button>
             </>
+          )}
+          {mode === "forgot" && (
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className="link-underline font-medium text-ink"
+            >
+              ← Back to Log In
+            </button>
           )}
         </p>
       </div>
