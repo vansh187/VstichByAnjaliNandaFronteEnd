@@ -4,7 +4,7 @@ import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
 import { getCategoryQuote } from "../utils/categoryTheme";
-import { filterByColors, getAvailableColors, sortProducts } from "../utils/productFilters";
+import { sortProducts } from "../utils/productFilters";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
@@ -25,7 +25,6 @@ export default function CollectionPage() {
   const [videoFailed, setVideoFailed] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [selectedColors, setSelectedColors] = useState([]);
 
   const {
     categories,
@@ -49,21 +48,11 @@ export default function CollectionPage() {
     limit: 24,
   });
 
-  const availableColors = useMemo(() => getAvailableColors(items), [items]);
-  const displayedItems = useMemo(
-    () => sortProducts(filterByColors(items, selectedColors), sortBy),
-    [items, selectedColors, sortBy],
-  );
-
-  const toggleColor = (color) =>
-    setSelectedColors((prev) =>
-      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
-    );
+  const displayedItems = useMemo(() => sortProducts(items, sortBy), [items, sortBy]);
 
   const clearFilters = () => {
     setSortBy("featured");
     setInStockOnly(false);
-    setSelectedColors([]);
   };
 
   const notFound =
@@ -167,9 +156,6 @@ export default function CollectionPage() {
                     onSortChange={setSortBy}
                     inStockOnly={inStockOnly}
                     onInStockChange={setInStockOnly}
-                    colors={availableColors}
-                    selectedColors={selectedColors}
-                    onToggleColor={toggleColor}
                     onClearFilters={clearFilters}
                     resultCount={displayedItems.length}
                   />

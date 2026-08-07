@@ -1,4 +1,3 @@
-import { colorToHex } from "../utils/colorSwatch";
 import { SORT_OPTIONS } from "../utils/productFilters";
 import { ChevronDownIcon } from "./Icons";
 
@@ -7,13 +6,10 @@ export default function ProductFilterBar({
   onSortChange,
   inStockOnly,
   onInStockChange,
-  colors,
-  selectedColors,
-  onToggleColor,
   onClearFilters,
   resultCount,
 }) {
-  const hasActiveFilters = inStockOnly || selectedColors.length > 0 || sortBy !== "featured";
+  const hasActiveFilters = inStockOnly || sortBy !== "featured";
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-sand-dark/70 pb-5">
@@ -46,30 +42,6 @@ export default function ProductFilterBar({
         />
         In Stock Only
       </label>
-
-      {colors.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by color">
-          {colors.map((color) => {
-            const active = selectedColors.includes(color);
-            return (
-              <button
-                key={color}
-                type="button"
-                title={color}
-                aria-label={color}
-                aria-pressed={active}
-                onClick={() => onToggleColor(color)}
-                className={`h-5 w-5 rounded-full border transition-all ${
-                  active
-                    ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-cream"
-                    : "border-sand-dark hover:border-charcoal"
-                }`}
-                style={{ backgroundColor: colorToHex(color) }}
-              />
-            );
-          })}
-        </div>
-      )}
 
       {hasActiveFilters && (
         <button
