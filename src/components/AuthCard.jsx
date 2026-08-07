@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
-import { EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
+import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
 
@@ -43,7 +43,7 @@ function validate(mode, fields) {
   return errors;
 }
 
-export default function AuthCard() {
+export default function AuthCard({ onClose }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -135,7 +135,17 @@ export default function AuthCard() {
   return (
     <div className="flex max-h-[88svh] flex-col border border-sand-dark bg-cream/95 shadow-2xl backdrop-blur-sm">
       {/* Pinned header: title + Log In / Sign Up tabs stay visible while the form below scrolls */}
-      <div className="shrink-0 border-b border-sand-dark bg-cream px-8 pt-8 sm:px-10 sm:pt-10">
+      <div className="relative shrink-0 border-b border-sand-dark bg-cream px-8 pt-8 sm:px-10 sm:pt-10">
+        {onClose && (
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="absolute top-4 right-4 text-charcoal/50 transition-colors hover:text-ink sm:top-5 sm:right-5"
+          >
+            <CloseIcon width="20" height="20" />
+          </button>
+        )}
         <img
           src="/static/brand/logo.jpg"
           alt="VStitch by Anjali Nanda"
