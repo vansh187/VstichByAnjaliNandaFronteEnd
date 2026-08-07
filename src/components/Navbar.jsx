@@ -36,24 +36,31 @@ function CollectionsNavItem() {
         <ChevronDownIcon width="14" height="14" className={open ? "rotate-180" : ""} />
       </Link>
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-4 w-60 border border-sand-dark bg-cream py-2 shadow-xl">
-          <Link
-            to="/collections"
-            onClick={() => setOpen(false)}
-            className="block border-b border-sand-dark/70 px-4 py-2.5 text-sm font-medium text-ink hover:bg-sand/60"
-          >
-            View All Collections
-          </Link>
-          {categories.map((cat) => (
+        // pt-4 (not mt-4) on this wrapper, not the panel below, so the gap
+        // between the trigger and the panel is still part of this element's
+        // hover area - a margin gap there is dead space the cursor has to
+        // cross outside any element, which drops the mouseleave/close before
+        // it ever reaches the links.
+        <div className="absolute left-0 top-full z-30 w-60 pt-4">
+          <div className="border border-sand-dark bg-cream py-2 shadow-xl">
             <Link
-              key={cat.vstitch_category_id}
-              to={`/collections/${cat.vstitch_category_id}`}
+              to="/collections"
               onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
+              className="block border-b border-sand-dark/70 px-4 py-2.5 text-sm font-medium text-ink hover:bg-sand/60"
             >
-              {withBrandPrefix(cat.category_name)}
+              View All Collections
             </Link>
-          ))}
+            {categories.map((cat) => (
+              <Link
+                key={cat.vstitch_category_id}
+                to={`/collections/${cat.vstitch_category_id}`}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
+              >
+                {withBrandPrefix(cat.category_name)}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>
