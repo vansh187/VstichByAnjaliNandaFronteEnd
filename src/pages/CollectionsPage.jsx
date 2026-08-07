@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
+import { filterByColors, getAvailableColors, sortProducts } from "../utils/productFilters";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
+import ProductFilterBar from "../components/ProductFilterBar";
 import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
@@ -14,10 +16,32 @@ import CollectionHeroVideo from "../components/CollectionHeroVideo";
 import { withBrandPrefix } from "../utils/categoryVideo";
 
 function CategoryProductsSection({ category, index }) {
+  const [sortBy, setSortBy] = useState("featured");
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [selectedColors, setSelectedColors] = useState([]);
+
   const { items, loading, error, reload } = useProducts({
     categoryId: category.vstitch_category_id,
+    inStockOnly,
     limit: 24,
   });
+
+  const availableColors = useMemo(() => getAvailableColors(items), [items]);
+  const displayedItems = useMemo(
+    () => sortProducts(filterByColors(items, selectedColors), sortBy),
+    [items, selectedColors, sortBy],
+  );
+
+  const toggleColor = (color) =>
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
+    );
+
+  const clearFilters = () => {
+    setSortBy("featured");
+    setInStockOnly(false);
+    setSelectedColors([]);
+  };
 
   return (
     <section
@@ -59,15 +83,38 @@ function CategoryProductsSection({ category, index }) {
       )}
 
       {!loading && !error && items.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {items.map((product, productIndex) => (
-            <ProductCard
-              key={product.vstitch_product_id}
-              product={product}
-              transitionDelay={productIndex * 70}
+        <>
+          <ProductFilterBar
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            inStockOnly={inStockOnly}
+            onInStockChange={setInStockOnly}
+            colors={availableColors}
+            selectedColors={selectedColors}
+            onToggleColor={toggleColor}
+            onClearFilters={clearFilters}
+            resultCount={displayedItems.length}
+          />
+
+          {displayedItems.length === 0 && (
+            <StateNotice
+              title="No products match your filters"
+              description="Try clearing a filter to see more pieces."
+              actionLabel="Clear Filters"
+              onAction={clearFilters}
             />
-          ))}
-        </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {displayedItems.map((product, productIndex) => (
+              <ProductCard
+                key={product.vstitch_product_id}
+                product={product}
+                transitionDelay={productIndex * 70}
+              />
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
