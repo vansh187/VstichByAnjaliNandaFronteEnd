@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
@@ -39,10 +39,6 @@ export default function CollectionPage() {
     loadMore,
     reload: reloadProducts,
   } = useProducts({ categoryId: Number.isFinite(categoryId) ? categoryId : undefined, limit: 24 });
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [categoryId]);
 
   const notFound =
     !categoriesLoading && !categoriesError && Number.isFinite(categoryId) && !category;

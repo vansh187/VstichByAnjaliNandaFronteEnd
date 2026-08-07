@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
-import { useClickOutside } from "../hooks/useClickOutside";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
@@ -121,10 +120,6 @@ export default function CollectionsPage() {
   const revealRef = useReveal();
   const { categories, loading, error, reload } = useCategories();
   const [videoFailed, setVideoFailed] = useState(false);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <div ref={revealRef}>

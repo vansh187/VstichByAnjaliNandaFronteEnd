@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
@@ -7,10 +6,6 @@ import { useReveal } from "../hooks/useReveal";
 
 export default function StoryPage() {
   const revealRef = useReveal();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <div ref={revealRef}>

@@ -14,18 +14,21 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import CartDrawer from "./components/CartDrawer";
 import VstitchAiWidget from "./components/VstitchAiWidget";
 import CartToast from "./components/CartToast";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   const location = useLocation();
   const backgroundLocation = location.state?.backgroundLocation;
+  const routedLocation = backgroundLocation || location;
 
   return (
     <>
+      <ScrollToTop pathname={routedLocation.pathname} />
       {/* When navigated to with a backgroundLocation (e.g. clicking "Log In" from
           the landing/home page), the underlying page keeps rendering here so the
           login modal below can overlay it. Direct/refresh visits to /login fall
           back to the full-page AuthPage since there's no page to show behind it. */}
-      <Routes location={backgroundLocation || location}>
+      <Routes location={routedLocation}>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route

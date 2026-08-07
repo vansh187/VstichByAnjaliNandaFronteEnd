@@ -56,8 +56,6 @@ export default function ProductDetailPage() {
   // product id in the URL changes, so every piece of state above already
   // starts fresh — this effect only needs to run the fetch itself.
   useEffect(() => {
-    window.scrollTo(0, 0);
-
     if (!validId) return undefined;
 
     let active = true;
