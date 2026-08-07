@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
-import { requestPasswordResetOtp, confirmPasswordReset } from "../lib/api";
+import { requestPasswordResetOtp, confirmPasswordReset, updateUserLocation } from "../lib/api";
+import { getLandingLocation } from "../lib/locationCapture";
 import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
@@ -46,6 +47,20 @@ function validate(mode, fields) {
   return errors;
 }
 
+// Login (either email/password or Google) never has a signup payload to
+// carry location in, so it reads whatever the landing-page prompt already
+// resolved and, if allowed, updates it against the now-known user id.
+// Fire-and-forget — never awaited by callers, so a slow/failed save can't
+// delay the post-login redirect.
+function applyLandingLocation(token) {
+  getLandingLocation().then(({ allowed, location: coords }) => {
+    if (!allowed || !coords) return;
+    updateUserLocation(coords, token).catch(() => {
+      // Best-effort — a failed save here shouldn't surface to the user.
+    });
+  });
+}
+
 export default function AuthCard({ onClose }) {
   const auth = useAuth();
   const navigate = useNavigate();
@@ -77,7 +92,8 @@ export default function AuthCard({ onClose }) {
       setFormError("");
       setGoogleLoading(true);
       try {
-        await auth.loginWithGoogle(idToken);
+        const data = await auth.loginWithGoogle(idToken);
+        applyLandingLocation(data.access_token);
         const redirectTo = location.state?.from?.pathname || "/home";
         navigate(redirectTo, { replace: true });
       } catch (err) {
@@ -190,6 +206,7 @@ export default function AuthCard({ onClose }) {
     setLoading(true);
     try {
       if (mode === "signup") {
+        const { allowed, location: coords } = await getLandingLocation();
         await auth.signup({
           vstitch_user_name: fields.vstitch_user_name.trim(),
           password: fields.password,
@@ -197,12 +214,15 @@ export default function AuthCard({ onClose }) {
           last_name: fields.last_name.trim(),
           email: fields.email.trim().toLowerCase(),
           phone_number: fields.phone_number.trim(),
+          location_permission_granted: allowed,
+          ...(allowed && coords ? { location: coords } : {}),
         });
         setSuccessMessage("Account created! Log in below to continue.");
         setFields((f) => ({ ...emptyFields, vstitch_user_name: f.vstitch_user_name }));
         setMode("login");
       } else {
-        await auth.login(fields.vstitch_user_name.trim(), fields.password);
+        const data = await auth.login(fields.vstitch_user_name.trim(), fields.password);
+        applyLandingLocation(data.access_token);
         const redirectTo = location.state?.from?.pathname || "/home";
         navigate(redirectTo, { replace: true });
       }
