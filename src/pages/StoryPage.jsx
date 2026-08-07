@@ -4,7 +4,6 @@ import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import { useReveal } from "../hooks/useReveal";
-import Swatch from "../components/Swatch";
 
 export default function StoryPage() {
   const revealRef = useReveal();
@@ -49,10 +48,10 @@ export default function StoryPage() {
             </div>
 
             <div data-reveal className="reveal mx-auto w-full max-w-[320px] overflow-hidden rounded-[1.5rem] border border-sand-dark/70 bg-ink p-2.5 shadow-[0_20px_80px_rgba(15,15,15,0.14)] lg:justify-self-end">
-              <Swatch
-                tone="from-[#5a3d17] via-[#3a332c] to-[#1c1815]"
-                monogram="AN"
-                className="aspect-[4/5] w-full rounded-[1rem]"
+              <img
+                src="/static/brand/founder.jpg"
+                alt="Anjali Nanda, Founder & Lead Designer"
+                className="aspect-[4/5] w-full rounded-[1rem] object-cover object-top"
               />
               <div className="mt-2 rounded-[0.9rem] border border-cream/20 bg-cream/10 p-3 backdrop-blur-sm">
                 <p className="font-display text-sm italic text-cream sm:text-base">
