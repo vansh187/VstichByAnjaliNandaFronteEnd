@@ -11,3 +11,7 @@ export function login(payload) {
 export function googleLogin(payload) {
   return post("/auth/google", payload);
 }
+
+export function subscribe(payload) {
+  return post("/subscribe", payload);
+}
