@@ -9,12 +9,18 @@ export default function Newsletter() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || loading) return;
+    if (loading) return;
+
+    const trimmedEmail = email.trim();
+    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
 
     setLoading(true);
     setError("");
     try {
-      await subscribe({ email: email.trim() });
+      await subscribe({ email: trimmedEmail });
       setSubmitted(true);
     } catch (err) {
       setError(err.fieldErrors?.email || err.message || "Something went wrong. Please try again.");
