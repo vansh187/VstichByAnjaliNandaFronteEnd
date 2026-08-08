@@ -53,9 +53,9 @@ function validate(mode, fields) {
 // Fire-and-forget — never awaited by callers, so a slow/failed save can't
 // delay the post-login redirect.
 function applyLandingLocation(token) {
-  getLandingLocation().then(({ allowed, location: coords }) => {
-    if (!allowed || !coords) return;
-    updateUserLocation(coords, token).catch(() => {
+  getLandingLocation().then(({ allowed, googleMapsLink }) => {
+    if (!allowed || !googleMapsLink) return;
+    updateUserLocation({ google_maps_link: googleMapsLink }, token).catch(() => {
       // Best-effort — a failed save here shouldn't surface to the user.
     });
   });
@@ -206,7 +206,7 @@ export default function AuthCard({ onClose }) {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { allowed, location: coords } = await getLandingLocation();
+        const { allowed, googleMapsLink } = await getLandingLocation();
         await auth.signup({
           vstitch_user_name: fields.vstitch_user_name.trim(),
           password: fields.password,
@@ -215,7 +215,7 @@ export default function AuthCard({ onClose }) {
           email: fields.email.trim().toLowerCase(),
           phone_number: fields.phone_number.trim(),
           location_permission_granted: allowed,
-          ...(allowed && coords ? { location: coords } : {}),
+          ...(allowed && googleMapsLink ? { google_maps_link: googleMapsLink } : {}),
         });
         setSuccessMessage("Account created! Log in below to continue.");
         setFields((f) => ({ ...emptyFields, vstitch_user_name: f.vstitch_user_name }));
