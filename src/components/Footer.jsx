@@ -4,6 +4,7 @@ import { useCategories } from "../hooks/useCategories";
 import { InstagramIcon, WhatsappIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
 import TermsOfServiceModal from "./TermsOfServiceModal";
+import PrivacyPolicyModal from "./PrivacyPolicyModal";
 
 const helpLinks = [
   { label: "Track Your Order", to: "/track-order" },
@@ -15,6 +16,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
   const { categories } = useCategories();
   const [termsOpen, setTermsOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   return (
     <footer className="border-t border-sand-dark bg-ink text-cream">
@@ -105,25 +107,29 @@ export default function Footer() {
             <div className="mt-6">
               <h3 className="text-xs font-medium tracking-[0.2em] text-gold-light uppercase">Company</h3>
               <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-cream/70">
-                {companyLinks.map((link) =>
-                  link === "Terms of Service" ? (
-                    <li key={link}>
-                      <button
-                        type="button"
-                        onClick={() => setTermsOpen(true)}
-                        className="link-underline transition-colors hover:text-cream"
-                      >
-                        {link}
-                      </button>
-                    </li>
-                  ) : (
+                {companyLinks.map((link) => {
+                  if (link === "Terms of Service" || link === "Privacy Policy") {
+                    const onOpen = link === "Terms of Service" ? setTermsOpen : setPrivacyOpen;
+                    return (
+                      <li key={link}>
+                        <button
+                          type="button"
+                          onClick={() => onOpen(true)}
+                          className="link-underline transition-colors hover:text-cream"
+                        >
+                          {link}
+                        </button>
+                      </li>
+                    );
+                  }
+                  return (
                     <li key={link}>
                       <a href="#" className="link-underline transition-colors hover:text-cream">
                         {link}
                       </a>
                     </li>
-                  ),
-                )}
+                  );
+                })}
               </ul>
             </div>
           </div>
@@ -144,6 +150,7 @@ export default function Footer() {
       </div>
 
       {termsOpen && <TermsOfServiceModal onClose={() => setTermsOpen(false)} />}
+      {privacyOpen && <PrivacyPolicyModal onClose={() => setPrivacyOpen(false)} />}
     </footer>
   );
 }
