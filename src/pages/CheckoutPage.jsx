@@ -9,6 +9,7 @@ import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import FormField from "../components/FormField";
+import CouponBox from "../components/CouponBox";
 import { inputClass } from "../utils/inputClass";
 import { CheckCircleIcon } from "../components/Icons";
 
@@ -94,6 +95,9 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [order, setOrder] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  const finalAmount = appliedCoupon?.final_amount ?? subtotal;
 
   const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
 
@@ -104,6 +108,13 @@ export default function CheckoutPage() {
       vstitch_product_variant_id: item.id,
       quantity: item.qty,
     })),
+    // Not part of the documented /orders or /payments/orders contract —
+    // see coupons-frontend-integration.md's "Order/payment payload" note.
+    // Sent whenever a coupon is applied so the amount actually charged
+    // matches what's shown on screen.
+    ...(appliedCoupon
+      ? { coupon_code: appliedCoupon.coupon_code, discount_amount: appliedCoupon.discount_amount }
+      : {}),
   });
 
   const cartItemsToInvoiceItems = () =>
@@ -157,7 +168,7 @@ export default function CheckoutPage() {
           order_status: "placed",
           payment_method: "razorpay",
           items: cartItemsToInvoiceItems(),
-          total_amount: subtotal,
+          total_amount: finalAmount,
         });
       } else if (status === "failed") {
         setFormError(
@@ -406,8 +417,8 @@ export default function CheckoutPage() {
                       ? "Redirecting to Payment…"
                       : "Placing Order…"
                     : paymentMethod === "online"
-                      ? `Proceed to Pay · ${formatINR(subtotal)}`
-                      : `Place Order · ${formatINR(subtotal)}`}
+                      ? `Proceed to Pay · ${formatINR(finalAmount)}`
+                      : `Place Order · ${formatINR(finalAmount)}`}
                 </button>
               </form>
             </div>
@@ -431,9 +442,31 @@ export default function CheckoutPage() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 flex items-center justify-between border-t border-sand-dark pt-4 font-display text-lg text-ink">
+
+              <CouponBox
+                orderAmount={subtotal}
+                token={token}
+                applied={appliedCoupon}
+                onApplied={setAppliedCoupon}
+                onRemoved={() => setAppliedCoupon(null)}
+              />
+
+              {appliedCoupon && (
+                <div className="mt-4 flex items-center justify-between text-sm text-charcoal/70">
+                  <span>Subtotal</span>
+                  <span>{formatINR(subtotal)}</span>
+                </div>
+              )}
+              {appliedCoupon && (
+                <div className="mt-1.5 flex items-center justify-between text-sm text-gold">
+                  <span>Discount ({appliedCoupon.coupon_code})</span>
+                  <span>-{formatINR(appliedCoupon.discount_amount)}</span>
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center justify-between border-t border-sand-dark pt-4 font-display text-lg text-ink">
                 <span>Total</span>
-                <span>{formatINR(subtotal)}</span>
+                <span>{formatINR(finalAmount)}</span>
               </div>
             </div>
           </div>
