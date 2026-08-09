@@ -176,16 +176,40 @@ export default function CheckoutPage() {
     shipping_country: CHAR_FILTERS.CITY_STATE,
   };
 
+  // Tracks the pincode + city/state we last auto-filled, so a later lookup
+  // (or the pincode changing/clearing) can tell an auto-filled value apart
+  // from one the customer typed in by hand.
+  const autoFilledRef = useRef({ pincode: "", city: "", state: "" });
+
   const update = (field) => (e) => {
     const filter = FIELD_CHAR_FILTERS[field];
     const value = filter ? sanitizeChars(e.target.value, filter) : e.target.value;
+
+    if (field === "shipping_postal_code") {
+      const nextPincode = value.trim();
+      const { pincode: autoPincode, city: autoCity, state: autoState } = autoFilledRef.current;
+      // The postal code no longer matches the one that produced the current
+      // city/state — clear them immediately (synchronously, in this same
+      // event) rather than waiting on a new lookup to overwrite them, so a
+      // stale city can never sit next to a pincode it doesn't belong to.
+      if (autoPincode && nextPincode !== autoPincode) {
+        setFields((f) => {
+          const cityWasAuto = f.shipping_city === autoCity;
+          const stateWasAuto = f.shipping_state === autoState;
+          return {
+            ...f,
+            shipping_postal_code: value,
+            shipping_city: cityWasAuto ? "" : f.shipping_city,
+            shipping_state: stateWasAuto ? "" : f.shipping_state,
+          };
+        });
+        autoFilledRef.current = { pincode: "", city: "", state: "" };
+        return;
+      }
+    }
+
     setFields((f) => ({ ...f, [field]: value }));
   };
-
-  // Tracks the city/state we last auto-filled from a pincode lookup, so a
-  // later lookup can safely overwrite them again — but leaves the fields
-  // alone once the user has typed something of their own into either.
-  const autoFilledRef = useRef({ city: "", state: "" });
 
   // The lookup only covers Indian PINs today — once shipping expands to
   // other countries this needs a per-country provider, not a blanket call.
@@ -198,28 +222,6 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const pincode = fields.shipping_postal_code.trim();
-
-    // Postal code was cleared entirely — clear whatever city/state we'd
-    // auto-filled from a prior lookup too, but only if the customer hasn't
-    // since edited either by hand (tracked via autoFilledRef).
-    if (pincode.length === 0) {
-      if (!autoFilledRef.current.city && !autoFilledRef.current.state) return undefined;
-      const clearTimer = setTimeout(() => {
-        setFields((f) => {
-          const cityWasAuto = f.shipping_city === autoFilledRef.current.city;
-          const stateWasAuto = f.shipping_state === autoFilledRef.current.state;
-          if (!cityWasAuto && !stateWasAuto) return f;
-          return {
-            ...f,
-            shipping_city: cityWasAuto ? "" : f.shipping_city,
-            shipping_state: stateWasAuto ? "" : f.shipping_state,
-          };
-        });
-        autoFilledRef.current = { city: "", state: "" };
-      }, 0);
-      return () => clearTimeout(clearTimer);
-    }
-
     if (!isIndiaShipment || !/^\d{6}$/.test(pincode)) return undefined;
 
     let cancelled = false;
@@ -244,7 +246,7 @@ export default function CheckoutPage() {
           shipping_state: stateUntouched ? result.state : f.shipping_state,
         };
       });
-      autoFilledRef.current = { city: result.city, state: result.state };
+      autoFilledRef.current = { pincode, city: result.city, state: result.state };
       setPincodeStatus("done");
     }, 500);
 
