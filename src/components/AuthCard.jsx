@@ -7,7 +7,7 @@ import { getLandingLocation } from "../lib/locationCapture";
 import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
-import { LIMITS, PATTERNS, isTooLong } from "../utils/validation";
+import { LIMITS, PATTERNS, CHAR_FILTERS, isTooLong, sanitizeChars } from "../utils/validation";
 
 const emailPattern = PATTERNS.EMAIL;
 
@@ -150,7 +150,19 @@ export default function AuthCard({ onClose }) {
     });
   };
 
-  const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
+  // Strips disallowed characters as the user types, not just on submit.
+  const FIELD_CHAR_FILTERS = {
+    first_name: CHAR_FILTERS.NAME,
+    last_name: CHAR_FILTERS.NAME,
+    vstitch_user_name: CHAR_FILTERS.USERNAME,
+    phone_number: CHAR_FILTERS.PHONE,
+  };
+
+  const update = (field) => (e) => {
+    const filter = FIELD_CHAR_FILTERS[field];
+    const value = filter ? sanitizeChars(e.target.value, filter) : e.target.value;
+    setFields((f) => ({ ...f, [field]: value }));
+  };
 
   const switchMode = (nextMode) => {
     setMode(nextMode);

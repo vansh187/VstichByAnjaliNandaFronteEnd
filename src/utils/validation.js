@@ -49,3 +49,22 @@ export const PATTERNS = {
 export function isTooLong(value, max) {
   return String(value ?? "").length > max;
 }
+
+// Character classes for stripping disallowed input as the user types (not
+// just rejecting on submit) — mirrors PATTERNS above but as a "remove
+// anything not in this set" regex rather than a "does the whole string
+// match" one, since a partial value (e.g. mid-typing) shouldn't be forced
+// to start with a letter the way the full-value PATTERNS require.
+export const CHAR_FILTERS = {
+  NAME: /[^\p{L}\s'-]/gu,
+  USERNAME: /[^A-Za-z0-9_.]/g,
+  CITY_STATE: /[^\p{L}\s'.-]/gu,
+  POSTAL_CODE: /[^A-Za-z0-9\s-]/g,
+  ADDRESS_LINE: /[^\p{L}\p{N}\s,.'#/&-]/gu,
+  COUPON_CODE: /[^A-Za-z0-9_-]/g,
+  PHONE: /[^\d+]/g,
+};
+
+export function sanitizeChars(value, filterRegex) {
+  return String(value ?? "").replace(filterRegex, "");
+}
