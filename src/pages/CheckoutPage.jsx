@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { createOrder, createRazorpayOrder, getOrders } from "../lib/catalogApi";
+import { lookupPincode } from "../lib/pincodeLookup";
 import { formatINR } from "../utils/format";
 import { generateInvoicePdf } from "../utils/generateInvoicePdf";
 import AnnouncementBar from "../components/AnnouncementBar";
@@ -159,10 +160,61 @@ export default function CheckoutPage() {
   const [confirming, setConfirming] = useState(false);
   const [order, setOrder] = useState(null);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [pincodeStatus, setPincodeStatus] = useState("idle"); // idle | loading | done | notfound
 
   const finalAmount = appliedCoupon?.final_amount ?? subtotal;
 
   const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
+
+  // Tracks the city/state we last auto-filled from a pincode lookup, so a
+  // later lookup can safely overwrite them again — but leaves the fields
+  // alone once the user has typed something of their own into either.
+  const autoFilledRef = useRef({ city: "", state: "" });
+
+  // The lookup only covers Indian PINs today — once shipping expands to
+  // other countries this needs a per-country provider, not a blanket call.
+  const isIndiaShipment = fields.shipping_country.trim().toLowerCase() === "india";
+  const pincodeIsComplete = isIndiaShipment && /^\d{6}$/.test(fields.shipping_postal_code.trim());
+  // Effect only ever setStates from inside the async timer callback, never
+  // synchronously in the effect body — the "idle" state for an incomplete
+  // pincode is derived at render time via `pincodeIsComplete` instead.
+  const displayedPincodeStatus = pincodeIsComplete ? pincodeStatus : "idle";
+
+  useEffect(() => {
+    const pincode = fields.shipping_postal_code.trim();
+    if (!isIndiaShipment || !/^\d{6}$/.test(pincode)) return undefined;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setPincodeStatus("loading");
+      const result = await lookupPincode(pincode);
+      if (cancelled) return;
+
+      if (!result) {
+        setPincodeStatus("notfound");
+        return;
+      }
+
+      setFields((f) => {
+        const cityUntouched = !f.shipping_city.trim() || f.shipping_city === autoFilledRef.current.city;
+        const stateUntouched =
+          !f.shipping_state.trim() || f.shipping_state === autoFilledRef.current.state;
+        if (!cityUntouched && !stateUntouched) return f;
+        return {
+          ...f,
+          shipping_city: cityUntouched ? result.city : f.shipping_city,
+          shipping_state: stateUntouched ? result.state : f.shipping_state,
+        };
+      });
+      autoFilledRef.current = { city: result.city, state: result.state };
+      setPincodeStatus("done");
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [fields.shipping_postal_code, isIndiaShipment]);
 
   const buildOrderPayload = () => ({
     ...fields,
@@ -416,6 +468,16 @@ export default function CheckoutPage() {
                       onChange={update("shipping_postal_code")}
                       className={inputClass(fieldErrors.shipping_postal_code)}
                     />
+                    {!fieldErrors.shipping_postal_code && displayedPincodeStatus === "loading" && (
+                      <span className="mt-1.5 block text-xs text-charcoal/60">
+                        Looking up city/state…
+                      </span>
+                    )}
+                    {!fieldErrors.shipping_postal_code && displayedPincodeStatus === "notfound" && (
+                      <span className="mt-1.5 block text-xs text-charcoal/60">
+                        Couldn't find that PIN — please enter city/state manually.
+                      </span>
+                    )}
                   </FormField>
                   <FormField label="Country" error={fieldErrors.shipping_country}>
                     <input
