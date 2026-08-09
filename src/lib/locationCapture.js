@@ -10,6 +10,10 @@
 // login instead calls the update-location endpoint against the now-known
 // user id. A denied/unavailable outcome flows into both as "no location" —
 // normal signup/login, nothing extra sent.
+//
+// Resolves with a ready-to-open Google Maps link rather than raw
+// latitude/longitude, so whatever gets stored is something a human can
+// click straight into a map instead of two floats to paste elsewhere.
 let capturePromise = null;
 
 function resolveOnce() {
@@ -17,20 +21,17 @@ function resolveOnce() {
 
   capturePromise = new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      resolve({ allowed: false, location: null });
+      resolve({ allowed: false, googleMapsLink: null });
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
           allowed: true,
-          location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
+          googleMapsLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`,
         });
       },
-      () => resolve({ allowed: false, location: null }),
+      () => resolve({ allowed: false, googleMapsLink: null }),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 },
     );
   });

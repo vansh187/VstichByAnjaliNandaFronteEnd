@@ -19,6 +19,12 @@ sent at all (signup) or the update call is skipped entirely (login).
 Nothing about signup/login itself is blocked or delayed by this — the
 prompt was already resolved by the time either form is submitted.
 
+**We send a ready-to-open Google Maps link, not raw latitude/longitude** —
+built client-side as `https://www.google.com/maps?q=<lat>,<lng>` — so
+whatever gets stored is something a human (e.g. support staff looking at an
+order) can click straight into a map, rather than two floats they'd need to
+paste into a maps tool themselves.
+
 **Base URL:** `https://vstichbyanjalinandapythonbackend.onrender.com`
 
 ---
@@ -33,9 +39,7 @@ outside the browser) the same as a denied prompt, not a validation error:
 | Field | Type | Rules |
 |---|---|---|
 | `location_permission_granted` | boolean, optional | whether the shopper allowed the geolocation prompt; absent should be treated the same as `false` |
-| `location` | object, optional | **present only when `location_permission_granted` is `true`** — omitted entirely otherwise, and never sent without the boolean also being `true` |
-| `location.latitude` | number | -90 to 90 |
-| `location.longitude` | number | -180 to 180 |
+| `google_maps_link` | string, optional | **present only when `location_permission_granted` is `true`** — omitted entirely otherwise, and never sent without the boolean also being `true`. A full URL, e.g. `https://www.google.com/maps?q=28.4595,77.0266` |
 
 **Allowed:**
 
@@ -48,7 +52,7 @@ outside the browser) the same as a denied prompt, not a validation error:
   "email": "anjali@example.com",
   "phone_number": "+919876543210",
   "location_permission_granted": true,
-  "location": { "latitude": 28.4595, "longitude": 77.0266 }
+  "google_maps_link": "https://www.google.com/maps?q=28.4595,77.0266"
 }
 ```
 
@@ -66,8 +70,8 @@ outside the browser) the same as a denied prompt, not a validation error:
 }
 ```
 
-Store `latitude`/`longitude` directly on the new user's `vstitch_users` row
-at creation time (see suggested columns below) when present.
+Store `google_maps_link` directly on the new user's `vstitch_users` row at
+creation time (see suggested column below) when present.
 
 ---
 
@@ -84,16 +88,15 @@ Authorization: Bearer <access_token>
 
 | Field | Type | Rules |
 |---|---|---|
-| `latitude` | number | -90 to 90 |
-| `longitude` | number | -180 to 180 |
+| `google_maps_link` | string | a full URL, e.g. `https://www.google.com/maps?q=28.4595,77.0266` |
 
 ```json
-{ "latitude": 28.4595, "longitude": 77.0266 }
+{ "google_maps_link": "https://www.google.com/maps?q=28.4595,77.0266" }
 ```
 
-This **updates** `latitude`/`longitude` on the `vstitch_users` row
-belonging to the authenticated user (identified from the token, not a
-body field) — not an insert into a separate table.
+This **updates** `google_maps_link` on the `vstitch_users` row belonging to
+the authenticated user (identified from the token, not a body field) — not
+an insert into a separate table.
 
 ### Success response — `200`
 
@@ -106,7 +109,7 @@ body field) — not an insert into a separate table.
 | Status | Example `detail` | Cause |
 |---|---|---|
 | 401 | `"Not authenticated."` | missing/expired/invalid token |
-| 422 | validation error array | missing/out-of-range `latitude`/`longitude` |
+| 422 | validation error array | missing/malformed `google_maps_link` |
 | 500 | `"Something went wrong. Please try again later."` | unexpected server/database error |
 
 (Standard error shape — see bottom of this doc.)
@@ -116,7 +119,7 @@ body field) — not an insert into a separate table.
 ## Suggested schema
 
 Add columns directly to `vstitch_users` rather than a separate table, since
-there's only ever one "current location" per user. **All three must be
+there's only ever one "current location" per user. **Both must be
 nullable** — they mirror the request fields above, which are themselves
 optional (permission denied, prompt dismissed, unsupported browser, or an
 account that predates this feature all mean no value to store):
@@ -124,14 +127,129 @@ account that predates this feature all mean no value to store):
 | Column | Type | Notes |
 |---|---|---|
 | `location_permission_granted` | boolean, nullable | `NULL` for accounts that existed before this feature, or where neither request field was sent |
-| `latitude` | float, nullable | set at signup if granted, else `NULL`; updated on every subsequent login where the shopper has location enabled |
-| `longitude` | float, nullable | same as above |
+| `google_maps_link` | string/text, nullable | set at signup if granted, else `NULL`; updated on every subsequent login where the shopper has location enabled |
+
+---
+
+## Database patch
+
+```sql
+ALTER TABLE vstitch_users
+  ADD COLUMN location_permission_granted BOOLEAN NULL,
+  ADD COLUMN google_maps_link TEXT NULL;
+```
+
+Both columns are nullable and have no default — existing rows simply stay
+`NULL` until that user next signs up (not applicable, they already exist)
+or logs in and grants location.
+
+If migrations run through Alembic, the equivalent revision:
+
+```python
+"""add location columns to vstitch_users
+
+Revision ID: xxxxxxxxxxxx
+Revises: <previous_revision_id>
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+def upgrade():
+    op.add_column("vstitch_users", sa.Column("location_permission_granted", sa.Boolean(), nullable=True))
+    op.add_column("vstitch_users", sa.Column("google_maps_link", sa.Text(), nullable=True))
+
+
+def downgrade():
+    op.drop_column("vstitch_users", "google_maps_link")
+    op.drop_column("vstitch_users", "location_permission_granted")
+```
+
+---
+
+## Suggested implementation (FastAPI + Pydantic + SQLAlchemy)
+
+Reference only — adapt names/imports/module paths to match your actual
+codebase structure; this isn't verified against your real code, just
+written to match the conventions already visible in this repo's other
+`*-backend-integration.md` docs (Pydantic error shape, `vstitch_`-prefixed
+identifiers).
+
+**Model** — add the two columns next to the rest of `vstitch_users`:
+
+```python
+class VstitchUser(Base):
+    __tablename__ = "vstitch_users"
+    # ...existing columns...
+    location_permission_granted: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    google_maps_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+```
+
+**Signup schema** — extend the existing request model with the two new
+optional fields (default `None`/`False` so older/other clients that don't
+send them still validate):
+
+```python
+class SignupRequest(BaseModel):
+    # ...existing fields...
+    location_permission_granted: bool = False
+    google_maps_link: str | None = None
+
+    @field_validator("google_maps_link")
+    @classmethod
+    def validate_maps_link(cls, v, info):
+        if v is None:
+            return v
+        if not info.data.get("location_permission_granted"):
+            raise ValueError("google_maps_link should only be sent when location_permission_granted is true.")
+        if not v.startswith("https://www.google.com/maps"):
+            raise ValueError("Enter a valid Google Maps URL.")
+        return v
+```
+
+In the `/signup` handler, when creating the row, pass the two fields
+straight through: `location_permission_granted=payload.location_permission_granted, google_maps_link=payload.google_maps_link`.
+
+**New endpoint** — `POST /users/location`:
+
+```python
+class UpdateLocationRequest(BaseModel):
+    google_maps_link: str
+
+    @field_validator("google_maps_link")
+    @classmethod
+    def validate_maps_link(cls, v):
+        if not v.startswith("https://www.google.com/maps"):
+            raise ValueError("Enter a valid Google Maps URL.")
+        return v
+
+
+class UpdateLocationResponse(BaseModel):
+    status: str
+
+
+@router.post("/users/location", response_model=UpdateLocationResponse)
+def update_user_location(
+    payload: UpdateLocationRequest,
+    current_user: VstitchUser = Depends(get_current_user),  # however auth is resolved elsewhere in this codebase
+    db: Session = Depends(get_db),
+):
+    current_user.google_maps_link = payload.google_maps_link
+    current_user.location_permission_granted = True
+    db.commit()
+    return UpdateLocationResponse(status="updated")
+```
+
+`get_current_user`/`get_db` should be whatever dependency this codebase
+already uses for other authenticated endpoints (e.g. `/orders`) — reuse
+those, don't reintroduce new auth plumbing for this one route.
 
 ## Nice-to-have (not blocking)
 
-- Reverse-geocode into a city/country server-side if useful elsewhere
-  (regional promotions, delivery-time estimates) — the frontend only ever
-  sends raw coordinates.
+- If it's ever useful to query or aggregate by location (e.g. regional
+  promotions), consider also parsing/storing latitude and longitude
+  separately from the link at write time — the frontend only ever sends
+  the link itself, not raw coordinates.
 
 ---
 
@@ -149,9 +267,9 @@ validation errors (Pydantic's default shape), same as every other endpoint:
   "detail": [
     {
       "type": "value_error",
-      "loc": ["body", "latitude"],
-      "msg": "Value error, Enter a valid latitude.",
-      "input": "200"
+      "loc": ["body", "google_maps_link"],
+      "msg": "Value error, Enter a valid URL.",
+      "input": "not-a-url"
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { subscribe } from "../lib/api";
+import { LIMITS, PATTERNS, isTooLong } from "../utils/validation";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,11 @@ export default function Newsletter() {
     if (loading) return;
 
     const trimmedEmail = email.trim();
-    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+    if (isTooLong(trimmedEmail, LIMITS.EMAIL_MAX)) {
+      setError(`Email must be under ${LIMITS.EMAIL_MAX} characters.`);
+      return;
+    }
+    if (!PATTERNS.EMAIL.test(trimmedEmail)) {
       setError("Enter a valid email address.");
       return;
     }
@@ -64,6 +69,7 @@ export default function Newsletter() {
                 id="newsletter-email"
                 type="email"
                 required
+                maxLength={LIMITS.EMAIL_MAX}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"

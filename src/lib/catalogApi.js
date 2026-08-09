@@ -81,3 +81,15 @@ export function submitCustomizationRequest(productId, variantId, payload, token)
 export function submitCustomizationInterest(payload) {
   return post("/customization-interest", payload);
 }
+
+// No auth - a guest cart can preview/apply a coupon before login (see
+// coupons-frontend-integration.md). Only coupons already usable at
+// `orderAmount` are returned, so this needs re-calling whenever the cart
+// subtotal changes.
+export function getCoupons(orderAmount) {
+  return get("/coupons", { order_amount: orderAmount });
+}
+
+export function applyCoupon(payload, token) {
+  return post("/coupons/apply", payload, token);
+}
