@@ -13,7 +13,7 @@ import FormField from "../components/FormField";
 import CouponBox from "../components/CouponBox";
 import { inputClass } from "../utils/inputClass";
 import { CheckCircleIcon } from "../components/Icons";
-import { LIMITS, PATTERNS, isTooLong } from "../utils/validation";
+import { LIMITS, PATTERNS, CHAR_FILTERS, isTooLong, sanitizeChars } from "../utils/validation";
 
 const emptyShipping = {
   shipping_recipient_name: "",
@@ -164,7 +164,23 @@ export default function CheckoutPage() {
 
   const finalAmount = appliedCoupon?.final_amount ?? subtotal;
 
-  const update = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
+  // Strips disallowed characters as the user types (not just on submit), so
+  // e.g. pasting "@$^$$@#$$@" into Recipient Name never sticks around.
+  const FIELD_CHAR_FILTERS = {
+    shipping_recipient_name: CHAR_FILTERS.NAME,
+    shipping_address_line1: CHAR_FILTERS.ADDRESS_LINE,
+    shipping_address_line2: CHAR_FILTERS.ADDRESS_LINE,
+    shipping_city: CHAR_FILTERS.CITY_STATE,
+    shipping_state: CHAR_FILTERS.CITY_STATE,
+    shipping_postal_code: CHAR_FILTERS.POSTAL_CODE,
+    shipping_country: CHAR_FILTERS.CITY_STATE,
+  };
+
+  const update = (field) => (e) => {
+    const filter = FIELD_CHAR_FILTERS[field];
+    const value = filter ? sanitizeChars(e.target.value, filter) : e.target.value;
+    setFields((f) => ({ ...f, [field]: value }));
+  };
 
   // Tracks the city/state we last auto-filled from a pincode lookup, so a
   // later lookup can safely overwrite them again — but leaves the fields
@@ -182,6 +198,28 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const pincode = fields.shipping_postal_code.trim();
+
+    // Postal code was cleared entirely — clear whatever city/state we'd
+    // auto-filled from a prior lookup too, but only if the customer hasn't
+    // since edited either by hand (tracked via autoFilledRef).
+    if (pincode.length === 0) {
+      if (!autoFilledRef.current.city && !autoFilledRef.current.state) return undefined;
+      const clearTimer = setTimeout(() => {
+        setFields((f) => {
+          const cityWasAuto = f.shipping_city === autoFilledRef.current.city;
+          const stateWasAuto = f.shipping_state === autoFilledRef.current.state;
+          if (!cityWasAuto && !stateWasAuto) return f;
+          return {
+            ...f,
+            shipping_city: cityWasAuto ? "" : f.shipping_city,
+            shipping_state: stateWasAuto ? "" : f.shipping_state,
+          };
+        });
+        autoFilledRef.current = { city: "", state: "" };
+      }, 0);
+      return () => clearTimeout(clearTimer);
+    }
+
     if (!isIndiaShipment || !/^\d{6}$/.test(pincode)) return undefined;
 
     let cancelled = false;
