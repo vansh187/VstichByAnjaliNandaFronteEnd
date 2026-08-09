@@ -12,6 +12,7 @@ import FormField from "../components/FormField";
 import CouponBox from "../components/CouponBox";
 import { inputClass } from "../utils/inputClass";
 import { CheckCircleIcon } from "../components/Icons";
+import { LIMITS, PATTERNS, isTooLong } from "../utils/validation";
 
 const emptyShipping = {
   shipping_recipient_name: "",
@@ -26,15 +27,77 @@ const emptyShipping = {
 
 function validate(fields) {
   const errors = {};
-  if (!fields.shipping_recipient_name.trim()) errors.shipping_recipient_name = "Required.";
-  if (!fields.shipping_address_line1.trim()) errors.shipping_address_line1 = "Required.";
-  if (!fields.shipping_city.trim()) errors.shipping_city = "Required.";
-  if (!fields.shipping_state.trim()) errors.shipping_state = "Required.";
-  if (!fields.shipping_postal_code.trim()) errors.shipping_postal_code = "Required.";
-  if (!fields.shipping_country.trim()) errors.shipping_country = "Required.";
-  if (fields.shipping_phone_number.trim().length < 7) {
-    errors.shipping_phone_number = "Enter a valid phone number.";
+
+  const recipientName = fields.shipping_recipient_name.trim();
+  if (!recipientName) {
+    errors.shipping_recipient_name = "Required.";
+  } else if (isTooLong(recipientName, LIMITS.NAME_MAX)) {
+    errors.shipping_recipient_name = `Must be under ${LIMITS.NAME_MAX} characters.`;
+  } else if (!PATTERNS.NAME.test(recipientName)) {
+    errors.shipping_recipient_name = "Only letters, spaces, hyphens and apostrophes are allowed.";
   }
+
+  const address1 = fields.shipping_address_line1.trim();
+  if (!address1) {
+    errors.shipping_address_line1 = "Required.";
+  } else if (isTooLong(address1, LIMITS.ADDRESS_LINE_MAX)) {
+    errors.shipping_address_line1 = `Must be under ${LIMITS.ADDRESS_LINE_MAX} characters.`;
+  } else if (!PATTERNS.ADDRESS_LINE.test(address1)) {
+    errors.shipping_address_line1 = "Contains characters that aren't allowed.";
+  }
+
+  const address2 = fields.shipping_address_line2.trim();
+  if (address2) {
+    if (isTooLong(address2, LIMITS.ADDRESS_LINE_MAX)) {
+      errors.shipping_address_line2 = `Must be under ${LIMITS.ADDRESS_LINE_MAX} characters.`;
+    } else if (!PATTERNS.ADDRESS_LINE.test(address2)) {
+      errors.shipping_address_line2 = "Contains characters that aren't allowed.";
+    }
+  }
+
+  const city = fields.shipping_city.trim();
+  if (!city) {
+    errors.shipping_city = "Required.";
+  } else if (isTooLong(city, LIMITS.CITY_STATE_MAX)) {
+    errors.shipping_city = `Must be under ${LIMITS.CITY_STATE_MAX} characters.`;
+  } else if (!PATTERNS.CITY_STATE.test(city)) {
+    errors.shipping_city = "Only letters, spaces and hyphens are allowed.";
+  }
+
+  const state = fields.shipping_state.trim();
+  if (!state) {
+    errors.shipping_state = "Required.";
+  } else if (isTooLong(state, LIMITS.CITY_STATE_MAX)) {
+    errors.shipping_state = `Must be under ${LIMITS.CITY_STATE_MAX} characters.`;
+  } else if (!PATTERNS.CITY_STATE.test(state)) {
+    errors.shipping_state = "Only letters, spaces and hyphens are allowed.";
+  }
+
+  const postalCode = fields.shipping_postal_code.trim();
+  if (!postalCode) {
+    errors.shipping_postal_code = "Required.";
+  } else if (isTooLong(postalCode, LIMITS.POSTAL_CODE_MAX)) {
+    errors.shipping_postal_code = `Must be under ${LIMITS.POSTAL_CODE_MAX} characters.`;
+  } else if (!PATTERNS.POSTAL_CODE.test(postalCode)) {
+    errors.shipping_postal_code = "Only letters, numbers, spaces and hyphens are allowed.";
+  }
+
+  const country = fields.shipping_country.trim();
+  if (!country) {
+    errors.shipping_country = "Required.";
+  } else if (isTooLong(country, LIMITS.COUNTRY_MAX)) {
+    errors.shipping_country = `Must be under ${LIMITS.COUNTRY_MAX} characters.`;
+  } else if (!PATTERNS.CITY_STATE.test(country)) {
+    errors.shipping_country = "Only letters, spaces and hyphens are allowed.";
+  }
+
+  const phone = fields.shipping_phone_number.trim();
+  if (phone.length < LIMITS.PHONE_MIN) {
+    errors.shipping_phone_number = "Enter a valid phone number.";
+  } else if (!PATTERNS.PHONE.test(phone)) {
+    errors.shipping_phone_number = `Enter ${LIMITS.PHONE_MIN}-${LIMITS.PHONE_MAX} digits, optionally starting with +.`;
+  }
+
   return errors;
 }
 
@@ -292,6 +355,7 @@ export default function CheckoutPage() {
                 <FormField label="Recipient Name" error={fieldErrors.shipping_recipient_name}>
                   <input
                     type="text"
+                    maxLength={LIMITS.NAME_MAX}
                     value={fields.shipping_recipient_name}
                     onChange={update("shipping_recipient_name")}
                     className={inputClass(fieldErrors.shipping_recipient_name)}
@@ -301,6 +365,7 @@ export default function CheckoutPage() {
                 <FormField label="Address Line 1" error={fieldErrors.shipping_address_line1}>
                   <input
                     type="text"
+                    maxLength={LIMITS.ADDRESS_LINE_MAX}
                     value={fields.shipping_address_line1}
                     onChange={update("shipping_address_line1")}
                     className={inputClass(fieldErrors.shipping_address_line1)}
@@ -313,6 +378,7 @@ export default function CheckoutPage() {
                 >
                   <input
                     type="text"
+                    maxLength={LIMITS.ADDRESS_LINE_MAX}
                     value={fields.shipping_address_line2}
                     onChange={update("shipping_address_line2")}
                     className={inputClass(fieldErrors.shipping_address_line2)}
@@ -323,6 +389,7 @@ export default function CheckoutPage() {
                   <FormField label="City" error={fieldErrors.shipping_city}>
                     <input
                       type="text"
+                      maxLength={LIMITS.CITY_STATE_MAX}
                       value={fields.shipping_city}
                       onChange={update("shipping_city")}
                       className={inputClass(fieldErrors.shipping_city)}
@@ -331,6 +398,7 @@ export default function CheckoutPage() {
                   <FormField label="State" error={fieldErrors.shipping_state}>
                     <input
                       type="text"
+                      maxLength={LIMITS.CITY_STATE_MAX}
                       value={fields.shipping_state}
                       onChange={update("shipping_state")}
                       className={inputClass(fieldErrors.shipping_state)}
@@ -342,6 +410,8 @@ export default function CheckoutPage() {
                   <FormField label="Postal Code" error={fieldErrors.shipping_postal_code}>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={LIMITS.POSTAL_CODE_MAX}
                       value={fields.shipping_postal_code}
                       onChange={update("shipping_postal_code")}
                       className={inputClass(fieldErrors.shipping_postal_code)}
@@ -350,6 +420,7 @@ export default function CheckoutPage() {
                   <FormField label="Country" error={fieldErrors.shipping_country}>
                     <input
                       type="text"
+                      maxLength={LIMITS.COUNTRY_MAX}
                       value={fields.shipping_country}
                       onChange={update("shipping_country")}
                       className={inputClass(fieldErrors.shipping_country)}
@@ -361,6 +432,7 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     placeholder="+91 98765 43210"
+                    maxLength={LIMITS.PHONE_MAX + 1}
                     value={fields.shipping_phone_number}
                     onChange={update("shipping_phone_number")}
                     className={inputClass(fieldErrors.shipping_phone_number)}

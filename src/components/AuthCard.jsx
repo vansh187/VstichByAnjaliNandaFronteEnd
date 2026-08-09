@@ -7,8 +7,9 @@ import { getLandingLocation } from "../lib/locationCapture";
 import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
+import { LIMITS, PATTERNS, isTooLong } from "../utils/validation";
 
-const emailPattern = /^\S+@\S+\.\S+$/;
+const emailPattern = PATTERNS.EMAIL;
 
 const emptyFields = {
   first_name: "",
@@ -23,22 +24,53 @@ function validate(mode, fields) {
   const errors = {};
 
   if (mode === "signup") {
-    if (fields.first_name.trim().length < 1) errors.first_name = "First name is required.";
-    if (fields.last_name.trim().length < 1) errors.last_name = "Last name is required.";
-    if (!emailPattern.test(fields.email)) errors.email = "Enter a valid email address.";
-    if (!fields.phone_number.trim()) {
+    const firstName = fields.first_name.trim();
+    const lastName = fields.last_name.trim();
+    if (firstName.length < 1) {
+      errors.first_name = "First name is required.";
+    } else if (isTooLong(firstName, LIMITS.NAME_MAX)) {
+      errors.first_name = `First name must be under ${LIMITS.NAME_MAX} characters.`;
+    } else if (!PATTERNS.NAME.test(firstName)) {
+      errors.first_name = "Only letters, spaces, hyphens and apostrophes are allowed.";
+    }
+
+    if (lastName.length < 1) {
+      errors.last_name = "Last name is required.";
+    } else if (isTooLong(lastName, LIMITS.NAME_MAX)) {
+      errors.last_name = `Last name must be under ${LIMITS.NAME_MAX} characters.`;
+    } else if (!PATTERNS.NAME.test(lastName)) {
+      errors.last_name = "Only letters, spaces, hyphens and apostrophes are allowed.";
+    }
+
+    if (isTooLong(fields.email, LIMITS.EMAIL_MAX)) {
+      errors.email = `Email must be under ${LIMITS.EMAIL_MAX} characters.`;
+    } else if (!emailPattern.test(fields.email)) {
+      errors.email = "Enter a valid email address.";
+    }
+
+    const phone = fields.phone_number.trim();
+    if (!phone) {
       errors.phone_number = "Phone number is required.";
-    } else if (!/^\+?\d{7,15}$/.test(fields.phone_number.trim())) {
-      errors.phone_number = "Enter 7-15 digits, optionally starting with +.";
+    } else if (!PATTERNS.PHONE.test(phone)) {
+      errors.phone_number = `Enter ${LIMITS.PHONE_MIN}-${LIMITS.PHONE_MAX} digits, optionally starting with +.`;
     }
   }
 
-  if (fields.vstitch_user_name.trim().length < 3) {
-    errors.vstitch_user_name = "Username must be at least 3 characters.";
+  const username = fields.vstitch_user_name.trim();
+  if (username.length < LIMITS.USERNAME_MIN) {
+    errors.vstitch_user_name = `Username must be at least ${LIMITS.USERNAME_MIN} characters.`;
+  } else if (isTooLong(username, LIMITS.USERNAME_MAX)) {
+    errors.vstitch_user_name = `Username must be under ${LIMITS.USERNAME_MAX} characters.`;
+  } else if (!PATTERNS.USERNAME.test(username)) {
+    errors.vstitch_user_name = "Only letters, numbers, underscores and dots are allowed.";
   }
 
-  if (mode === "signup" && fields.password.length < 8) {
-    errors.password = "Password must be at least 8 characters.";
+  if (mode === "signup") {
+    if (fields.password.length < LIMITS.PASSWORD_MIN) {
+      errors.password = `Password must be at least ${LIMITS.PASSWORD_MIN} characters.`;
+    } else if (isTooLong(fields.password, LIMITS.PASSWORD_MAX)) {
+      errors.password = `Password must be under ${LIMITS.PASSWORD_MAX} characters.`;
+    }
   }
   if (mode === "login" && fields.password.length < 1) {
     errors.password = "Password is required.";
@@ -173,7 +205,11 @@ export default function AuthCard({ onClose }) {
     e.preventDefault();
     const errors = {};
     if (!/^\d{6}$/.test(otp.trim())) errors.otp = "Enter the 6-digit code from your email.";
-    if (newPassword.length < 8) errors.new_password = "Password must be at least 8 characters.";
+    if (newPassword.length < LIMITS.PASSWORD_MIN) {
+      errors.new_password = `Password must be at least ${LIMITS.PASSWORD_MIN} characters.`;
+    } else if (isTooLong(newPassword, LIMITS.PASSWORD_MAX)) {
+      errors.new_password = `Password must be under ${LIMITS.PASSWORD_MAX} characters.`;
+    }
     if (confirmNewPassword !== newPassword) errors.confirm_password = "Passwords don't match.";
     setFieldErrors(errors);
     setFormError("");
@@ -302,6 +338,7 @@ export default function AuthCard({ onClose }) {
                 <input
                   type="text"
                   autoComplete="given-name"
+                  maxLength={LIMITS.NAME_MAX}
                   value={fields.first_name}
                   onChange={update("first_name")}
                   className={inputClass(fieldErrors.first_name)}
@@ -311,6 +348,7 @@ export default function AuthCard({ onClose }) {
                 <input
                   type="text"
                   autoComplete="family-name"
+                  maxLength={LIMITS.NAME_MAX}
                   value={fields.last_name}
                   onChange={update("last_name")}
                   className={inputClass(fieldErrors.last_name)}
@@ -324,6 +362,7 @@ export default function AuthCard({ onClose }) {
               <input
                 type="email"
                 autoComplete="email"
+                maxLength={LIMITS.EMAIL_MAX}
                 value={fields.email}
                 onChange={update("email")}
                 className={inputClass(fieldErrors.email)}
@@ -337,6 +376,7 @@ export default function AuthCard({ onClose }) {
                 type="tel"
                 autoComplete="tel"
                 placeholder="+91 98765 43210"
+                maxLength={LIMITS.PHONE_MAX + 1}
                 value={fields.phone_number}
                 onChange={update("phone_number")}
                 className={inputClass(fieldErrors.phone_number)}
@@ -348,6 +388,7 @@ export default function AuthCard({ onClose }) {
             <input
               type="text"
               autoComplete="username"
+              maxLength={LIMITS.USERNAME_MAX}
               value={fields.vstitch_user_name}
               onChange={update("vstitch_user_name")}
               className={inputClass(fieldErrors.vstitch_user_name)}
@@ -359,6 +400,7 @@ export default function AuthCard({ onClose }) {
               <input
                 type={showPassword ? "text" : "password"}
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                maxLength={mode === "signup" ? LIMITS.PASSWORD_MAX : undefined}
                 value={fields.password}
                 onChange={update("password")}
                 className={`${inputClass(fieldErrors.password)} pr-11`}
@@ -404,6 +446,7 @@ export default function AuthCard({ onClose }) {
               <input
                 type="email"
                 autoComplete="email"
+                maxLength={LIMITS.EMAIL_MAX}
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
                 className={inputClass(fieldErrors.email)}
@@ -438,6 +481,7 @@ export default function AuthCard({ onClose }) {
                 <input
                   type={showNewPassword ? "text" : "password"}
                   autoComplete="new-password"
+                  maxLength={LIMITS.PASSWORD_MAX}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={`${inputClass(fieldErrors.new_password)} pr-11`}
@@ -457,6 +501,7 @@ export default function AuthCard({ onClose }) {
               <input
                 type={showNewPassword ? "text" : "password"}
                 autoComplete="new-password"
+                maxLength={LIMITS.PASSWORD_MAX}
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
                 className={inputClass(fieldErrors.confirm_password)}
