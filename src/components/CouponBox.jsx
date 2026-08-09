@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCoupons, applyCoupon } from "../lib/catalogApi";
 import { formatINR } from "../utils/format";
+import { LIMITS, PATTERNS, isTooLong } from "../utils/validation";
 
 function formatDiscount(coupon) {
   return coupon.discount_type === "percentage"
@@ -78,6 +79,26 @@ export default function CouponBox({ orderAmount, token, applied, onApplied, onRe
     }
   };
 
+  // Format/length checks only apply to what the user typed in by hand —
+  // the eligible-coupon buttons below call handleApply directly with a
+  // server-provided code, which should always reach the API even if it
+  // doesn't match this client-side pattern.
+  const handleManualApply = () => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+
+    if (isTooLong(trimmed, LIMITS.COUPON_CODE_MAX)) {
+      setError(`Coupon code must be under ${LIMITS.COUPON_CODE_MAX} characters.`);
+      return;
+    }
+    if (!PATTERNS.COUPON_CODE.test(trimmed)) {
+      setError("Coupon code can only contain letters, numbers, hyphens and underscores.");
+      return;
+    }
+
+    handleApply(trimmed);
+  };
+
   if (applied) {
     return (
       <div className="mt-6 border border-gold-light bg-sand/60 px-4 py-3">
@@ -131,13 +152,14 @@ export default function CouponBox({ orderAmount, token, applied, onApplied, onRe
         <input
           type="text"
           placeholder="Enter coupon code"
+          maxLength={LIMITS.COUPON_CODE_MAX}
           value={code}
           onChange={(e) => setCode(e.target.value)}
           className="w-full border border-sand-dark bg-cream px-4 py-2.5 text-sm text-ink placeholder:text-charcoal/40 focus:border-gold focus:outline-none"
         />
         <button
           type="button"
-          onClick={() => handleApply(code)}
+          onClick={handleManualApply}
           disabled={applying || !code.trim()}
           className="shrink-0 border border-ink px-5 py-2.5 text-xs font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-ink hover:text-cream disabled:cursor-not-allowed disabled:opacity-60"
         >

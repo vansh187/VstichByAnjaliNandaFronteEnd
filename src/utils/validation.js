@@ -20,6 +20,7 @@ export const LIMITS = {
   CITY_STATE_MAX: 250, // vstitch_addresses/orders city/state
   POSTAL_CODE_MAX: 20, // vstitch_addresses/orders postal_code
   COUNTRY_MAX: 250, // vstitch_addresses/orders country
+  COUPON_CODE_MAX: 50, // vstitch_coupons.couponcode
 };
 
 export const PATTERNS = {
@@ -41,6 +42,8 @@ export const PATTERNS = {
   POSTAL_CODE: /^[A-Za-z0-9\s-]+$/,
   // Address lines: letters/digits/spaces plus common punctuation, no control chars.
   ADDRESS_LINE: /^[\p{L}\p{N}\s,.'#/&-]+$/u,
+  // Coupon codes: letters, digits, hyphen and underscore only.
+  COUPON_CODE: /^[A-Za-z0-9_-]+$/,
 };
 
 export function isTooLong(value, max) {
