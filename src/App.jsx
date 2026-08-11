@@ -7,6 +7,7 @@ import HomePage from "./pages/HomePage";
 import SummerLuxePage from "./pages/SummerLuxePage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import StoryPage from "./pages/StoryPage";
 import FaqPage from "./pages/FaqPage";
@@ -62,6 +63,10 @@ function App() {
           path="/product/:productId"
           element={<ProductDetailPage key={location.pathname} />}
         />
+        {/* keyed by search string so a new query while already on this page
+            remounts into a clean useProducts state, same reasoning as
+            CollectionPage above */}
+        <Route path="/search" element={<SearchResultsPage key={location.search} />} />
         <Route path="/our-story" element={<StoryPage />} />
         <Route path="/faqs" element={<FaqPage />} />
         <Route
