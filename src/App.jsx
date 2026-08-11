@@ -34,7 +34,10 @@ function App() {
 
   return (
     <>
-      <ScrollToTop pathname={routedLocation.pathname} />
+      {/* Includes search too, not just pathname - /search's route key varies
+          by query string while the pathname itself stays put, so a new
+          search from the navbar needs this to still reset scroll. */}
+      <ScrollToTop pathname={routedLocation.pathname + routedLocation.search} />
       {/* When navigated to with a backgroundLocation (e.g. clicking "Log In" from
           the landing/home page), the underlying page keeps rendering here so the
           login modal below can overlay it. Direct/refresh visits to /login fall

@@ -82,7 +82,7 @@ export default function Navbar() {
     e.preventDefault();
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
-    navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+    navigate(`/search?${new URLSearchParams({ q: trimmed })}`);
     setSearchOpen(false);
     setSearchQuery("");
   };
