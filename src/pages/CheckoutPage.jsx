@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
@@ -166,46 +166,34 @@ export default function CheckoutPage() {
 
   // Strips disallowed characters as the user types (not just on submit), so
   // e.g. pasting "@$^$$@#$$@" into Recipient Name never sticks around.
+  // City/state/country are read-only (auto-filled from the postal code
+  // lookup below) so they're never typed into directly and need no filter.
   const FIELD_CHAR_FILTERS = {
     shipping_recipient_name: CHAR_FILTERS.NAME,
     shipping_address_line1: CHAR_FILTERS.ADDRESS_LINE,
     shipping_address_line2: CHAR_FILTERS.ADDRESS_LINE,
-    shipping_city: CHAR_FILTERS.CITY_STATE,
-    shipping_state: CHAR_FILTERS.CITY_STATE,
     shipping_postal_code: CHAR_FILTERS.POSTAL_CODE,
-    shipping_country: CHAR_FILTERS.CITY_STATE,
   };
-
-  // Tracks the pincode + city/state we last auto-filled, so a later lookup
-  // (or the pincode changing/clearing) can tell an auto-filled value apart
-  // from one the customer typed in by hand.
-  const autoFilledRef = useRef({ pincode: "", city: "", state: "" });
 
   const update = (field) => (e) => {
     const filter = FIELD_CHAR_FILTERS[field];
     const value = filter ? sanitizeChars(e.target.value, filter) : e.target.value;
 
     if (field === "shipping_postal_code") {
-      const nextPincode = value.trim();
-      const { pincode: autoPincode, city: autoCity, state: autoState } = autoFilledRef.current;
-      // The postal code no longer matches the one that produced the current
-      // city/state — clear them immediately (synchronously, in this same
-      // event) rather than waiting on a new lookup to overwrite them, so a
-      // stale city can never sit next to a pincode it doesn't belong to.
-      if (autoPincode && nextPincode !== autoPincode) {
-        setFields((f) => {
-          const cityWasAuto = f.shipping_city === autoCity;
-          const stateWasAuto = f.shipping_state === autoState;
-          return {
-            ...f,
-            shipping_postal_code: value,
-            shipping_city: cityWasAuto ? "" : f.shipping_city,
-            shipping_state: stateWasAuto ? "" : f.shipping_state,
-          };
-        });
-        autoFilledRef.current = { pincode: "", city: "", state: "" };
-        return;
-      }
+      // City/state/country are read-only and only ever come from the pincode
+      // lookup below — the moment the pincode changes, the previous lookup's
+      // result no longer applies, so clear them immediately (synchronously,
+      // in this same event) rather than waiting on the new lookup to
+      // overwrite them. That leaves the fields blank while the debounced
+      // lookup for the new pincode is in flight, instead of showing a city
+      // that belongs to the old pincode.
+      setFields((f) => ({
+        ...f,
+        shipping_postal_code: value,
+        shipping_city: "",
+        shipping_state: "",
+      }));
+      return;
     }
 
     setFields((f) => ({ ...f, [field]: value }));
@@ -235,18 +223,14 @@ export default function CheckoutPage() {
         return;
       }
 
-      setFields((f) => {
-        const cityUntouched = !f.shipping_city.trim() || f.shipping_city === autoFilledRef.current.city;
-        const stateUntouched =
-          !f.shipping_state.trim() || f.shipping_state === autoFilledRef.current.state;
-        if (!cityUntouched && !stateUntouched) return f;
-        return {
-          ...f,
-          shipping_city: cityUntouched ? result.city : f.shipping_city,
-          shipping_state: stateUntouched ? result.state : f.shipping_state,
-        };
-      });
-      autoFilledRef.current = { pincode, city: result.city, state: result.state };
+      // City/state/country are read-only, so the lookup result always wins —
+      // there's no user-typed value it could be overwriting.
+      setFields((f) => ({
+        ...f,
+        shipping_city: result.city,
+        shipping_state: result.state,
+        shipping_country: result.country || f.shipping_country,
+      }));
       setPincodeStatus("done");
     }, 500);
 
@@ -481,19 +465,21 @@ export default function CheckoutPage() {
                   <FormField label="City" error={fieldErrors.shipping_city}>
                     <input
                       type="text"
+                      readOnly
+                      placeholder="Auto-filled from postal code"
                       maxLength={LIMITS.CITY_STATE_MAX}
                       value={fields.shipping_city}
-                      onChange={update("shipping_city")}
-                      className={inputClass(fieldErrors.shipping_city)}
+                      className={`${inputClass(fieldErrors.shipping_city)} cursor-not-allowed bg-sand/40 text-charcoal/70`}
                     />
                   </FormField>
                   <FormField label="State" error={fieldErrors.shipping_state}>
                     <input
                       type="text"
+                      readOnly
+                      placeholder="Auto-filled from postal code"
                       maxLength={LIMITS.CITY_STATE_MAX}
                       value={fields.shipping_state}
-                      onChange={update("shipping_state")}
-                      className={inputClass(fieldErrors.shipping_state)}
+                      className={`${inputClass(fieldErrors.shipping_state)} cursor-not-allowed bg-sand/40 text-charcoal/70`}
                     />
                   </FormField>
                 </div>
@@ -515,17 +501,17 @@ export default function CheckoutPage() {
                     )}
                     {!fieldErrors.shipping_postal_code && displayedPincodeStatus === "notfound" && (
                       <span className="mt-1.5 block text-xs text-charcoal/60">
-                        Couldn't find that PIN — please enter city/state manually.
+                        Couldn't find that PIN — please double-check the postal code.
                       </span>
                     )}
                   </FormField>
                   <FormField label="Country" error={fieldErrors.shipping_country}>
                     <input
                       type="text"
+                      readOnly
                       maxLength={LIMITS.COUNTRY_MAX}
                       value={fields.shipping_country}
-                      onChange={update("shipping_country")}
-                      className={inputClass(fieldErrors.shipping_country)}
+                      className={`${inputClass(fieldErrors.shipping_country)} cursor-not-allowed bg-sand/40 text-charcoal/70`}
                     />
                   </FormField>
                 </div>
