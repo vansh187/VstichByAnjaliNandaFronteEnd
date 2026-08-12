@@ -13,7 +13,7 @@ function formatDiscount(coupon) {
 // row. `applied` (the last successful /coupons/apply response, or null) is
 // owned by CheckoutPage since it also needs discount_amount/final_amount
 // to compute the total shown at the bottom and sent with the order.
-export default function CouponBox({ orderAmount, token, applied, onApplied, onRemoved }) {
+export default function CouponBox({ orderAmount, token, applied, onApplied, onRemoved, disabled = false }) {
   const [available, setAvailable] = useState([]);
   const [code, setCode] = useState("");
   const [applying, setApplying] = useState(false);
@@ -28,7 +28,11 @@ export default function CouponBox({ orderAmount, token, applied, onApplied, onRe
   // changes, not every time a fresh apply updates `applied` at the same
   // total — the closure still captures whatever `applied` was as of the
   // render where orderAmount changed.
+  //
+  // Coupons are prepaid-only — while `disabled` (COD selected), the parent
+  // has already cleared `applied`, so skip fetching/re-validating entirely.
   useEffect(() => {
+    if (disabled) return undefined;
     let active = true;
 
     getCoupons(orderAmount)
@@ -60,7 +64,7 @@ export default function CouponBox({ orderAmount, token, applied, onApplied, onRe
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderAmount]);
+  }, [orderAmount, disabled]);
 
   const handleApply = async (rawCode) => {
     const trimmed = rawCode.trim();
@@ -98,6 +102,17 @@ export default function CouponBox({ orderAmount, token, applied, onApplied, onRe
 
     handleApply(trimmed);
   };
+
+  if (disabled) {
+    return (
+      <div className="mt-6 border-t border-sand-dark pt-6">
+        <p className="text-sm font-medium text-ink">Have a coupon?</p>
+        <p className="mt-2 text-xs text-charcoal/60">
+          Coupons apply to prepaid orders only — switch to Pay Online to use one.
+        </p>
+      </div>
+    );
+  }
 
   if (applied) {
     return (

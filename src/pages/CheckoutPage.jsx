@@ -542,7 +542,12 @@ export default function CheckoutPage() {
                         name="paymentMethod"
                         value="cod"
                         checked={paymentMethod === "cod"}
-                        onChange={() => setPaymentMethod("cod")}
+                        onChange={() => {
+                          setPaymentMethod("cod");
+                          // Coupons are prepaid-only — dropping one here
+                          // instead of leaving it applied-but-unusable.
+                          setAppliedCoupon(null);
+                        }}
                         className="accent-ink"
                       />
                       Cash on Delivery
@@ -609,6 +614,7 @@ export default function CheckoutPage() {
                 applied={appliedCoupon}
                 onApplied={setAppliedCoupon}
                 onRemoved={() => setAppliedCoupon(null)}
+                disabled={paymentMethod === "cod"}
               />
 
               {appliedCoupon && (
