@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { inputClass } from "../utils/inputClass";
-import { submitCustomizationRequest } from "../lib/catalogApi";
+import { submitCustomizationRequest, editCustomizationRequest } from "../lib/catalogApi";
 import FormField from "./FormField";
 import ModalShell from "./ModalShell";
 import { CheckCircleIcon } from "./Icons";
@@ -42,7 +42,16 @@ function whatsappHref(productName, values) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsappMessage(productName, values))}`;
 }
 
-export default function CustomizationModal({ productId, variantId, productName, token, onClose }) {
+export default function CustomizationModal({
+  productId,
+  variantId,
+  productName,
+  token,
+  onClose,
+  initialValues,
+  existingRequest,
+  onSubmitted,
+}) {
   const [values, setValues] = useState({
     name: "",
     phone: "",
@@ -53,11 +62,21 @@ export default function CustomizationModal({ productId, variantId, productName, 
     sleeveLength: "",
     dressLength: "",
     notes: "",
+    ...initialValues,
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
+  // Reopening on a variant with a prior submission goes straight to the
+  // confirmation screen (with an Edit option) instead of a blank form.
+  const [result, setResult] = useState(existingRequest ?? null);
+  // Tracks the request being edited so "Edit Measurements" -> resubmit calls
+  // PATCH on the same row instead of POSTing a duplicate. Survives clearing
+  // `result` to show the form again (unlike `result`, which resets to null).
+  const [editingRequestId, setEditingRequestId] = useState(
+    existingRequest?.vstitch_customization_request_id ?? null,
+  );
+  const [wasEdit, setWasEdit] = useState(false);
 
   // Same StrictMode double-invoke pitfall fixed in ReturnReplaceModal: this
   // has to be reset to true inside the effect body on every mount, not just
@@ -125,6 +144,8 @@ export default function CustomizationModal({ productId, variantId, productName, 
     setSubmitting(true);
     setFormError("");
 
+    const isEdit = Boolean(editingRequestId);
+
     const payload = {
       customer_name: values.name.trim(),
       customer_phone: values.phone.trim(),
@@ -134,13 +155,22 @@ export default function CustomizationModal({ productId, variantId, productName, 
       shoulder_in: Number(values.shoulder),
       sleeve_length_in: Number(values.sleeveLength),
       dress_length_in: Number(values.dressLength),
-      ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
+      // On edit, always send `notes` (even blank) since PATCH is a full
+      // replace — omitting it would leave a stale value stuck server-side.
+      // On create it's still omitted when blank, matching the original
+      // create-only behavior the backend already expects.
+      ...(isEdit || values.notes.trim() ? { notes: values.notes.trim() } : {}),
     };
 
     try {
-      const data = await submitCustomizationRequest(productId, variantId, payload, token);
+      const data = isEdit
+        ? await editCustomizationRequest(productId, variantId, editingRequestId, payload, token)
+        : await submitCustomizationRequest(productId, variantId, payload, token);
       if (!mountedRef.current) return;
       setResult(data);
+      setWasEdit(isEdit);
+      setEditingRequestId(data.vstitch_customization_request_id);
+      onSubmitted?.({ variantId, values, result: data });
     } catch (err) {
       if (!mountedRef.current) return;
       // 404 here would mean the product/variant id sent doesn't match what
@@ -167,11 +197,11 @@ export default function CustomizationModal({ productId, variantId, productName, 
       {result ? (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <CheckCircleIcon width="40" height="40" className="text-emerald-600" />
-          <p className="font-display text-xl text-ink">Request submitted</p>
+          <p className="font-display text-xl text-ink">{wasEdit ? "Request updated" : "Request submitted"}</p>
           <p className="text-sm text-charcoal/70">
             Request #{result.vstitch_customization_request_id} for{" "}
-            <span className="font-medium text-ink">{productName}</span> has been saved — our
-            studio will reach out to confirm your custom fit.
+            <span className="font-medium text-ink">{productName}</span> has been{" "}
+            {wasEdit ? "updated" : "saved"} — our studio will reach out to confirm your custom fit.
           </p>
           <a
             href={whatsappHref(productName, values)}
@@ -181,13 +211,22 @@ export default function CustomizationModal({ productId, variantId, productName, 
           >
             Message us on WhatsApp too
           </a>
-          <button
-            type="button"
-            onClick={onClose}
-            className="mt-2 bg-ink px-6 py-2.5 text-sm font-medium tracking-[0.12em] text-cream uppercase hover:bg-charcoal"
-          >
-            Done
-          </button>
+          <div className="mt-2 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setResult(null)}
+              className="border border-ink px-6 py-2.5 text-sm font-medium tracking-[0.12em] text-ink uppercase hover:bg-ink hover:text-cream"
+            >
+              Edit Measurements
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-ink px-6 py-2.5 text-sm font-medium tracking-[0.12em] text-cream uppercase hover:bg-charcoal"
+            >
+              Done
+            </button>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
@@ -263,7 +302,13 @@ export default function CustomizationModal({ productId, variantId, productName, 
             disabled={submitting}
             className="w-full bg-ink py-3 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:bg-sand-dark disabled:text-charcoal/40"
           >
-            {submitting ? "Submitting…" : "Submit Custom Fit Request"}
+            {submitting
+              ? editingRequestId
+                ? "Updating…"
+                : "Submitting…"
+              : editingRequestId
+                ? "Update Custom Fit Request"
+                : "Submit Custom Fit Request"}
           </button>
         </form>
       )}

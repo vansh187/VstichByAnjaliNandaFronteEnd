@@ -26,6 +26,29 @@ import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
 
+// Custom-fit requests are keyed by variant id and persisted here so the
+// "Custom" badge and the entered measurements survive a page reload — the
+// backend has no GET endpoint yet to fetch a user's past requests.
+const CUSTOM_FIT_STORAGE_KEY = "vstitch_custom_fit_requests";
+
+function readCustomFitStore() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_FIT_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeCustomFitStore(store) {
+  try {
+    localStorage.setItem(CUSTOM_FIT_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // Storage unavailable (private browsing, quota) — request still
+    // succeeded server-side, so fail silently rather than blocking the UI.
+  }
+}
+
 export default function ProductDetailPage() {
   const { productId: productIdParam } = useParams();
   const productId = Number(productIdParam);
@@ -46,6 +69,17 @@ export default function ProductDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  // variantId -> { values, result } for any custom-fit request already
+  // submitted this session (rehydrated from localStorage on load).
+  const [customRequests, setCustomRequests] = useState(() => readCustomFitStore());
+
+  const handleCustomizeSubmitted = useCallback(({ variantId, values, result }) => {
+    setCustomRequests((prev) => {
+      const next = { ...prev, [variantId]: { values, result } };
+      writeCustomFitStore(next);
+      return next;
+    });
+  }, []);
 
   const validId = Number.isFinite(productId) && productId > 0;
 
@@ -115,6 +149,9 @@ export default function ProductDetailPage() {
   const selectedSize =
     manualSize && variantsForColor.some((v) => v.size === manualSize) ? manualSize : autoSize;
   const selectedVariant = variantsForColor.find((v) => v.size === selectedSize) ?? null;
+  const currentCustomRequest = selectedVariant
+    ? customRequests[selectedVariant.vstitch_product_variant_id]
+    : null;
 
   const inStock = detail ? detail.variants.some((v) => v.stock_quantity > 0) : false;
   const canOrder = inStock && selectedVariant && selectedVariant.stock_quantity > 0;
@@ -166,8 +203,11 @@ export default function ProductDetailPage() {
 
   const addToCart = () => {
     if (!canOrder) return false;
+    const requestId = currentCustomRequest?.result?.vstitch_customization_request_id;
     for (let i = 0; i < qty; i += 1) {
       addItem({
+        // item.id doubles as vstitch_product_variant_id sent straight to the
+        // order API at checkout, so it must stay the real numeric variant id.
         id: selectedVariant.vstitch_product_variant_id,
         productId: detail.vstitch_product_id,
         name: detail.product_name,
@@ -175,6 +215,9 @@ export default function ProductDetailPage() {
         color: effectiveColor,
         price: selectedVariant.price,
         image: activeImage?.image_url ?? null,
+        ...(requestId
+          ? { isCustom: true, customizationRequestId: requestId, customMeasurements: currentCustomRequest.values }
+          : {}),
       });
     }
     return true;
@@ -400,6 +443,12 @@ export default function ProductDetailPage() {
                         </button>
                       ))}
                     </div>
+                    {currentCustomRequest && (
+                      <p className="mt-2 inline-flex w-fit items-center gap-1.5 border border-gold/60 bg-gold/10 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-ink">
+                        <CheckCircleIcon width="12" height="12" className="text-gold" />
+                        Custom fit requested
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => setCustomizeOpen(true)}
@@ -407,7 +456,9 @@ export default function ProductDetailPage() {
                       title={!selectedVariant ? "Select a size to request a custom fit" : undefined}
                       className="mt-3 text-xs font-medium tracking-wide text-ink underline underline-offset-2 hover:text-gold disabled:cursor-not-allowed disabled:text-charcoal/40 disabled:no-underline disabled:hover:text-charcoal/40"
                     >
-                      Need a custom fit? Request bespoke measurements
+                      {currentCustomRequest
+                        ? "View or edit your custom fit measurements"
+                        : "Need a custom fit? Request bespoke measurements"}
                     </button>
                   </div>
                 )}
@@ -563,6 +614,9 @@ export default function ProductDetailPage() {
           productName={detail.product_name}
           token={token}
           onClose={() => setCustomizeOpen(false)}
+          initialValues={currentCustomRequest?.values}
+          existingRequest={currentCustomRequest?.result}
+          onSubmitted={handleCustomizeSubmitted}
         />
       )}
     </div>

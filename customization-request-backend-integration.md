@@ -117,6 +117,67 @@ expects this shape) works without changes:
 - No `401` unless a token *is* provided and is invalid/expired — a request
   with no token at all should succeed anonymously, as above
 
+## Edit endpoint
+
+The product page now lets a shopper reopen the form for a variant they
+already submitted measurements for (an "Edit Measurements" button on the
+confirmation screen, or reopening after a page reload — the frontend
+remembers the last submitted request per variant in `localStorage`). This
+needs a real update endpoint so editing changes the existing row instead of
+creating a duplicate `pending` request for the same product/variant.
+
+```
+PATCH /products/{product_id}/variants/{variant_id}/customization-requests/{request_id}
+```
+
+(flatter `PATCH /customization-requests/{request_id}` is fine too, to match
+whichever convention the create endpoint ends up using.)
+
+**Auth:** same bearer-token-optional rule as create.
+- If the original request has a `vstitch_user_id`, only a token resolving to
+  that same user may edit it — `403` otherwise.
+- If the original request is anonymous (`vstitch_user_id = null`), allow the
+  edit with no ownership check (same trust model the anonymous create
+  already has — the frontend is the only thing that "remembers" the request
+  id in that case, via `localStorage`).
+- `404` if `request_id` doesn't exist, or doesn't belong to `product_id` /
+  `variant_id`.
+
+**Request body** — same shape as create, full replace of all editable
+fields (not a partial patch):
+
+```json
+{
+  "customer_name": "Anjali Sharma",
+  "customer_phone": "+91 98765 43210",
+  "bust_in": 36,
+  "waist_in": 30.5,
+  "hips_in": 39,
+  "shoulder_in": 14.5,
+  "sleeve_length_in": 22,
+  "dress_length_in": 42,
+  "notes": "Slightly looser through the waist, please — updated after trying on a similar piece in-store."
+}
+```
+
+**Success response (`200`):**
+
+```json
+{
+  "vstitch_customization_request_id": 101,
+  "vstitch_product_id": 42,
+  "vstitch_product_variant_id": 317,
+  "status": "pending",
+  "created_at": "2026-08-03T10:15:00Z",
+  "updated_at": "2026-08-12T09:42:00Z"
+}
+```
+
+- `status` resets to `pending` on edit if it had already moved to
+  `in_review`/`confirmed` — an edited measurement set needs the studio to
+  re-review it.
+- Same validation (`422` with per-field messages) and shape as create.
+
 ## Nice-to-have (not blocking)
 
 `GET /customization-requests` (auth required) — returns the logged-in

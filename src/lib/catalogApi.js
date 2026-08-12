@@ -1,4 +1,4 @@
-import { get, post } from "./http";
+import { get, post, patch } from "./http";
 
 // Categories change rarely and are used across several pages (nav tiles,
 // collection headers) — cache the in-flight/resolved promise so we only
@@ -74,6 +74,17 @@ export function replaceOrder(orderId, payload, token) {
 // backend spec.
 export function submitCustomizationRequest(productId, variantId, payload, token) {
   return post(`/products/${productId}/variants/${variantId}/customization-requests`, payload, token);
+}
+
+// Updates an existing request in place (see "Edit endpoint" in
+// customization-request-backend-integration.md) instead of creating a
+// duplicate pending row for the same product/variant.
+export function editCustomizationRequest(productId, variantId, requestId, payload, token) {
+  return patch(
+    `/products/${productId}/variants/${variantId}/customization-requests/${requestId}`,
+    payload,
+    token,
+  );
 }
 
 // No auth - reachable by any visitor, logged in or not (see

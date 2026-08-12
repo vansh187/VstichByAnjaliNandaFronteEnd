@@ -10,8 +10,12 @@ export function CartProvider({ children }) {
     setItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        // Spread `product` over `item` (not the other way around) so a
+        // re-add carries forward whatever changed since the first add —
+        // e.g. isCustom/customizationRequestId/customMeasurements from a
+        // custom-fit request submitted after a plain add of the same variant.
         return prev.map((item) =>
-          item.id === product.id ? { ...item, qty: item.qty + 1 } : item,
+          item.id === product.id ? { ...item, ...product, qty: item.qty + 1 } : item,
         );
       }
       return [...prev, { ...product, qty: 1 }];
