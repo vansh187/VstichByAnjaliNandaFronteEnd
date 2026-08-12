@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useProducts } from "../hooks/useProducts";
+import { getProducts } from "../lib/catalogApi";
+import { buildSearchCandidates } from "../utils/searchTerms";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
@@ -15,10 +18,69 @@ export default function SearchResultsPage() {
   const [searchParams] = useSearchParams();
   const query = (searchParams.get("q") ?? "").trim();
 
-  const { items, loading, loadingMore, error, hasMore, loadMore, reload } = useProducts({
-    search: query || undefined,
+  // The exact query is tried first; if it comes back empty, this probes a
+  // short list of fallback terms (singular/plural, individual keywords —
+  // see buildSearchCandidates) and upgrades to the first one that actually
+  // has results, so plural/singular mismatches don't dead-end a search.
+  const [resolvedSearch, setResolvedSearch] = useState(query);
+  const [resolving, setResolving] = useState(Boolean(query));
+
+  useEffect(() => {
+    // Nothing to resolve for an empty query — the page doesn't render
+    // results at all in that case (see the `!query` checks below), so
+    // `resolving`/`resolvedSearch` are guarded at render time instead of
+    // reset here.
+    if (!query) return undefined;
+
+    let cancelled = false;
+
+    (async () => {
+      setResolving(true);
+      // Reset to the new exact query so a query change (e.g. navigating
+      // from one search to another) never shows the previous query's
+      // resolved/fallback term while this one is still probing.
+      setResolvedSearch(query);
+
+      for (const candidate of buildSearchCandidates(query)) {
+        if (cancelled) return;
+        try {
+          const data = await getProducts({ search: candidate, limit: 1 });
+          if (cancelled) return;
+          if (data?.items?.length > 0) {
+            setResolvedSearch(candidate);
+            setResolving(false);
+            return;
+          }
+        } catch {
+          // Probe failure — move on to the next candidate. The real fetch
+          // below (via useProducts) will surface a proper error state if
+          // the API is genuinely down.
+        }
+      }
+      if (!cancelled) {
+        setResolvedSearch(query);
+        setResolving(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [query]);
+
+  const {
+    items,
+    loading: itemsLoading,
+    loadingMore,
+    error,
+    hasMore,
+    loadMore,
+    reload,
+  } = useProducts({
+    search: query ? resolvedSearch || undefined : undefined,
     limit: 24,
   });
+  const loading = itemsLoading || (Boolean(query) && resolving);
 
   return (
     <div ref={revealRef}>
