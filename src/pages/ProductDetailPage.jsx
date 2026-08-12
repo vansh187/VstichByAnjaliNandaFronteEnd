@@ -428,13 +428,13 @@ export default function ProductDetailPage() {
                           key={v.vstitch_product_variant_id}
                           type="button"
                           disabled={v.stock_quantity <= 0}
-                          aria-pressed={selectedSize === v.size}
+                          aria-pressed={!currentCustomRequest && selectedSize === v.size}
                           onClick={() => {
                             setManualSize(v.size);
                             setQty(1);
                           }}
                           className={`min-w-[3rem] border px-3 py-2 text-xs font-medium uppercase tracking-widest transition-colors ${
-                            selectedSize === v.size
+                            !currentCustomRequest && selectedSize === v.size
                               ? "border-ink bg-ink text-cream"
                               : "border-sand-dark text-ink hover:border-charcoal"
                           } disabled:cursor-not-allowed disabled:border-sand-dark disabled:bg-sand/40 disabled:text-charcoal/40`}
@@ -444,7 +444,7 @@ export default function ProductDetailPage() {
                       ))}
                     </div>
                     {currentCustomRequest && (
-                      <p className="mt-2 inline-flex w-fit items-center gap-1.5 border border-gold/60 bg-gold/10 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-ink">
+                      <p className="mt-2 flex w-fit items-center gap-1.5 border border-gold/60 bg-gold/10 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-ink">
                         <CheckCircleIcon width="12" height="12" className="text-gold" />
                         Custom fit requested
                       </p>
