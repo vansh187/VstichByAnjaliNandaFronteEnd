@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import { initLandingLocationCapture } from "./lib/locationCapture";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
 import HomePage from "./pages/HomePage";
 import SummerLuxePage from "./pages/SummerLuxePage";
 import CollectionsPage from "./pages/CollectionsPage";
@@ -45,6 +46,8 @@ function App() {
       <Routes location={routedLocation}>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/verify-email/:userId/:token" element={<EmailVerificationPage />} />
+        <Route path="/verify-email" element={<EmailVerificationPage />} />
         <Route
           path="/home"
           element={

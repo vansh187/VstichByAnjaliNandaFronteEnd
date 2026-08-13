@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { createOrder, createRazorpayOrder, getOrders } from "../lib/catalogApi";
+import { resendVerificationEmail } from "../lib/api";
 import { lookupPincode } from "../lib/pincodeLookup";
 import { formatINR } from "../utils/format";
 import { generateInvoicePdf } from "../utils/generateInvoicePdf";
@@ -155,6 +156,8 @@ export default function CheckoutPage() {
   const [fields, setFields] = useState(emptyShipping);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const [showVerificationResend, setShowVerificationResend] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -272,8 +275,35 @@ export default function CheckoutPage() {
       navigate("/login", { state: { from: { pathname: "/checkout" } } });
       return;
     }
+
+    if (err.status === 409 && /verify|verified/i.test(err.message || "")) {
+      setShowVerificationResend(true);
+      setFormError(
+        "Your email must be verified to place an order. Please check your email and click the verification link.",
+      );
+      return;
+    }
+
+    setShowVerificationResend(false);
     setFormError(err.message || "Something went wrong. Please try again.");
     if (err.fieldErrors) setFieldErrors(err.fieldErrors);
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!token) {
+      setFormError("Please log in again to request a new verification email.");
+      return;
+    }
+
+    setResendingVerification(true);
+    try {
+      await resendVerificationEmail({}, token);
+      setFormError("A new verification email has been sent. Please check your inbox and spam folder.");
+    } catch (err) {
+      setFormError(err.message || "We couldn’t send a new verification email right now. Please try again later.");
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   const finalizeOrder = (orderData) => {
@@ -422,9 +452,21 @@ export default function CheckoutPage() {
               </p>
 
               {formError && (
-                <p className="mt-6 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {formError}
-                </p>
+                <div className="mt-6 space-y-3">
+                  <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {formError}
+                  </p>
+                  {showVerificationResend && (
+                    <button
+                      type="button"
+                      onClick={handleResendVerificationEmail}
+                      disabled={resendingVerification}
+                      className="w-full border border-ink bg-ink px-4 py-3 text-xs font-medium tracking-[0.16em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {resendingVerification ? "Sending…" : "Resend verification email"}
+                    </button>
+                  )}
+                </div>
               )}
 
               <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-5">
