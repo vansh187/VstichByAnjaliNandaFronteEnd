@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { verifyEmail } from "../lib/api";
-import { getLoginRedirectUrl, parseVerificationParams } from "../utils/verification";
+import { parseVerificationParams } from "../utils/verification";
 
 export default function EmailVerificationPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("Verifying your email...");
 
@@ -29,7 +30,7 @@ export default function EmailVerificationPage() {
         setMessage(data.message || "Email verification success. Please login to continue.");
 
         window.setTimeout(() => {
-          window.location.assign(getLoginRedirectUrl());
+          window.location.href = "/login";
         }, 2500);
       } catch (err) {
         if (!active) return;
@@ -41,7 +42,7 @@ export default function EmailVerificationPage() {
         const lower = detail.toLowerCase();
         if (lower.includes("already verified") || lower.includes("already been used")) {
           window.setTimeout(() => {
-            window.location.assign(getLoginRedirectUrl());
+            navigate("/login", { replace: true });
           }, 2200);
         }
       }
@@ -52,7 +53,7 @@ export default function EmailVerificationPage() {
     return () => {
       active = false;
     };
-  }, [location]);
+  }, [location, navigate]);
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-ink px-5 py-16 text-cream">
