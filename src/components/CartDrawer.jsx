@@ -87,6 +87,11 @@ export default function CartDrawer() {
                               .join(" · ")}
                           </p>
                         )}
+                        {item.isCustom && (
+                          <p className="mt-0.5 text-[0.65rem] font-semibold tracking-[0.14em] text-gold uppercase">
+                            Custom Fit
+                          </p>
+                        )}
                       </div>
                       <button
                         type="button"

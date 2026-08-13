@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import { useOverlay } from "../hooks/useOverlay";
@@ -72,9 +72,20 @@ export default function Navbar() {
   const { isAuthenticated, logout } = useAuth();
   const { count, openCart } = useCart();
   const location = useLocation();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    navigate(`/search?${new URLSearchParams({ q: trimmed })}`);
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -143,7 +154,7 @@ export default function Navbar() {
           <button
             type="button"
             aria-label="Search"
-            className="hidden transition-colors hover:text-gold sm:inline-flex"
+            className="inline-flex transition-colors hover:text-gold"
             onClick={() => setSearchOpen((v) => !v)}
           >
             <SearchIcon />
@@ -167,23 +178,31 @@ export default function Navbar() {
 
       {searchOpen && (
         <div className="border-t border-sand-dark/70 bg-cream px-5 py-4 sm:px-8">
-          <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="mx-auto flex max-w-7xl items-center gap-3"
+          >
             <SearchIcon className="shrink-0 text-charcoal" />
             <input
               type="search"
               autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search sarees, lehengas, suits…"
               className="w-full border-none bg-transparent font-display text-lg italic text-ink placeholder:text-charcoal/50 focus:outline-none"
             />
             <button
               type="button"
               aria-label="Close search"
-              onClick={() => setSearchOpen(false)}
+              onClick={() => {
+                setSearchOpen(false);
+                setSearchQuery("");
+              }}
               className="text-charcoal hover:text-gold"
             >
               <CloseIcon />
             </button>
-          </div>
+          </form>
         </div>
       )}
 

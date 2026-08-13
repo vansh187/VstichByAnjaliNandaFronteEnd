@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { createOrder, createRazorpayOrder, getOrders } from "../lib/catalogApi";
+import { resendVerificationEmail } from "../lib/api";
 import { lookupPincode } from "../lib/pincodeLookup";
 import { formatINR } from "../utils/format";
 import { generateInvoicePdf } from "../utils/generateInvoicePdf";
@@ -155,6 +156,8 @@ export default function CheckoutPage() {
   const [fields, setFields] = useState(emptyShipping);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const [showVerificationResend, setShowVerificationResend] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -166,46 +169,34 @@ export default function CheckoutPage() {
 
   // Strips disallowed characters as the user types (not just on submit), so
   // e.g. pasting "@$^$$@#$$@" into Recipient Name never sticks around.
+  // City/state/country are read-only (auto-filled from the postal code
+  // lookup below) so they're never typed into directly and need no filter.
   const FIELD_CHAR_FILTERS = {
     shipping_recipient_name: CHAR_FILTERS.NAME,
     shipping_address_line1: CHAR_FILTERS.ADDRESS_LINE,
     shipping_address_line2: CHAR_FILTERS.ADDRESS_LINE,
-    shipping_city: CHAR_FILTERS.CITY_STATE,
-    shipping_state: CHAR_FILTERS.CITY_STATE,
     shipping_postal_code: CHAR_FILTERS.POSTAL_CODE,
-    shipping_country: CHAR_FILTERS.CITY_STATE,
   };
-
-  // Tracks the pincode + city/state we last auto-filled, so a later lookup
-  // (or the pincode changing/clearing) can tell an auto-filled value apart
-  // from one the customer typed in by hand.
-  const autoFilledRef = useRef({ pincode: "", city: "", state: "" });
 
   const update = (field) => (e) => {
     const filter = FIELD_CHAR_FILTERS[field];
     const value = filter ? sanitizeChars(e.target.value, filter) : e.target.value;
 
     if (field === "shipping_postal_code") {
-      const nextPincode = value.trim();
-      const { pincode: autoPincode, city: autoCity, state: autoState } = autoFilledRef.current;
-      // The postal code no longer matches the one that produced the current
-      // city/state — clear them immediately (synchronously, in this same
-      // event) rather than waiting on a new lookup to overwrite them, so a
-      // stale city can never sit next to a pincode it doesn't belong to.
-      if (autoPincode && nextPincode !== autoPincode) {
-        setFields((f) => {
-          const cityWasAuto = f.shipping_city === autoCity;
-          const stateWasAuto = f.shipping_state === autoState;
-          return {
-            ...f,
-            shipping_postal_code: value,
-            shipping_city: cityWasAuto ? "" : f.shipping_city,
-            shipping_state: stateWasAuto ? "" : f.shipping_state,
-          };
-        });
-        autoFilledRef.current = { pincode: "", city: "", state: "" };
-        return;
-      }
+      // City/state/country are read-only and only ever come from the pincode
+      // lookup below — the moment the pincode changes, the previous lookup's
+      // result no longer applies, so clear them immediately (synchronously,
+      // in this same event) rather than waiting on the new lookup to
+      // overwrite them. That leaves the fields blank while the debounced
+      // lookup for the new pincode is in flight, instead of showing a city
+      // that belongs to the old pincode.
+      setFields((f) => ({
+        ...f,
+        shipping_postal_code: value,
+        shipping_city: "",
+        shipping_state: "",
+      }));
+      return;
     }
 
     setFields((f) => ({ ...f, [field]: value }));
@@ -235,18 +226,14 @@ export default function CheckoutPage() {
         return;
       }
 
-      setFields((f) => {
-        const cityUntouched = !f.shipping_city.trim() || f.shipping_city === autoFilledRef.current.city;
-        const stateUntouched =
-          !f.shipping_state.trim() || f.shipping_state === autoFilledRef.current.state;
-        if (!cityUntouched && !stateUntouched) return f;
-        return {
-          ...f,
-          shipping_city: cityUntouched ? result.city : f.shipping_city,
-          shipping_state: stateUntouched ? result.state : f.shipping_state,
-        };
-      });
-      autoFilledRef.current = { pincode, city: result.city, state: result.state };
+      // City/state/country are read-only, so the lookup result always wins —
+      // there's no user-typed value it could be overwriting.
+      setFields((f) => ({
+        ...f,
+        shipping_city: result.city,
+        shipping_state: result.state,
+        shipping_country: result.country || f.shipping_country,
+      }));
       setPincodeStatus("done");
     }, 500);
 
@@ -288,8 +275,35 @@ export default function CheckoutPage() {
       navigate("/login", { state: { from: { pathname: "/checkout" } } });
       return;
     }
+
+    if (err.status === 409 && /verify|verified/i.test(err.message || "")) {
+      setShowVerificationResend(true);
+      setFormError(
+        "Your email must be verified to place an order. Please check your email and click the verification link.",
+      );
+      return;
+    }
+
+    setShowVerificationResend(false);
     setFormError(err.message || "Something went wrong. Please try again.");
     if (err.fieldErrors) setFieldErrors(err.fieldErrors);
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!token) {
+      setFormError("Please log in again to request a new verification email.");
+      return;
+    }
+
+    setResendingVerification(true);
+    try {
+      await resendVerificationEmail({}, token);
+      setFormError("A new verification email has been sent. Please check your inbox and spam folder.");
+    } catch (err) {
+      setFormError(err.message || "We couldn’t send a new verification email right now. Please try again later.");
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   const finalizeOrder = (orderData) => {
@@ -438,9 +452,21 @@ export default function CheckoutPage() {
               </p>
 
               {formError && (
-                <p className="mt-6 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {formError}
-                </p>
+                <div className="mt-6 space-y-3">
+                  <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {formError}
+                  </p>
+                  {showVerificationResend && (
+                    <button
+                      type="button"
+                      onClick={handleResendVerificationEmail}
+                      disabled={resendingVerification}
+                      className="w-full border border-ink bg-ink px-4 py-3 text-xs font-medium tracking-[0.16em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {resendingVerification ? "Sending…" : "Resend verification email"}
+                    </button>
+                  )}
+                </div>
               )}
 
               <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-5">
@@ -481,19 +507,21 @@ export default function CheckoutPage() {
                   <FormField label="City" error={fieldErrors.shipping_city}>
                     <input
                       type="text"
+                      readOnly
+                      placeholder="Auto-filled from postal code"
                       maxLength={LIMITS.CITY_STATE_MAX}
                       value={fields.shipping_city}
-                      onChange={update("shipping_city")}
-                      className={inputClass(fieldErrors.shipping_city)}
+                      className={`${inputClass(fieldErrors.shipping_city)} cursor-not-allowed bg-sand/40 text-charcoal/70`}
                     />
                   </FormField>
                   <FormField label="State" error={fieldErrors.shipping_state}>
                     <input
                       type="text"
+                      readOnly
+                      placeholder="Auto-filled from postal code"
                       maxLength={LIMITS.CITY_STATE_MAX}
                       value={fields.shipping_state}
-                      onChange={update("shipping_state")}
-                      className={inputClass(fieldErrors.shipping_state)}
+                      className={`${inputClass(fieldErrors.shipping_state)} cursor-not-allowed bg-sand/40 text-charcoal/70`}
                     />
                   </FormField>
                 </div>
@@ -515,17 +543,17 @@ export default function CheckoutPage() {
                     )}
                     {!fieldErrors.shipping_postal_code && displayedPincodeStatus === "notfound" && (
                       <span className="mt-1.5 block text-xs text-charcoal/60">
-                        Couldn't find that PIN — please enter city/state manually.
+                        Couldn't find that PIN — please double-check the postal code.
                       </span>
                     )}
                   </FormField>
                   <FormField label="Country" error={fieldErrors.shipping_country}>
                     <input
                       type="text"
+                      readOnly
                       maxLength={LIMITS.COUNTRY_MAX}
                       value={fields.shipping_country}
-                      onChange={update("shipping_country")}
-                      className={inputClass(fieldErrors.shipping_country)}
+                      className={`${inputClass(fieldErrors.shipping_country)} cursor-not-allowed bg-sand/40 text-charcoal/70`}
                     />
                   </FormField>
                 </div>
@@ -556,7 +584,12 @@ export default function CheckoutPage() {
                         name="paymentMethod"
                         value="cod"
                         checked={paymentMethod === "cod"}
-                        onChange={() => setPaymentMethod("cod")}
+                        onChange={() => {
+                          setPaymentMethod("cod");
+                          // Coupons are prepaid-only — dropping one here
+                          // instead of leaving it applied-but-unusable.
+                          setAppliedCoupon(null);
+                        }}
                         className="accent-ink"
                       />
                       Cash on Delivery
@@ -623,6 +656,7 @@ export default function CheckoutPage() {
                 applied={appliedCoupon}
                 onApplied={setAppliedCoupon}
                 onRemoved={() => setAppliedCoupon(null)}
+                disabled={paymentMethod === "cod"}
               />
 
               {appliedCoupon && (

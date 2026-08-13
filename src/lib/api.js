@@ -1,4 +1,4 @@
-import { post } from "./http";
+import { get, post } from "./http";
 
 export function signup(payload) {
   return post("/signup", payload);
@@ -6,6 +6,14 @@ export function signup(payload) {
 
 export function login(payload) {
   return post("/login", payload);
+}
+
+export function verifyEmail(userId, token) {
+  return get(`/verify-email/${userId}/${token}`);
+}
+
+export function resendVerificationEmail(payload, token) {
+  return post("/resend-verification-email", payload || {}, token);
 }
 
 export function googleLogin(payload) {

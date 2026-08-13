@@ -82,3 +82,7 @@ export function get(path, query, token) {
 export function post(path, body, token) {
   return request(path, { method: "POST", body, token });
 }
+
+export function patch(path, body, token) {
+  return request(path, { method: "PATCH", body, token });
+}

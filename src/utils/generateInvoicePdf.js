@@ -2,7 +2,10 @@
 // so formatINR's Intl currency symbol renders as a stray/superscript
 // character in the PDF. Use a plain "Rs." prefix here instead - screen UI
 // keeps the ₹ symbol via formatINR, only the PDF needs this.
-const pdfAmountFormatter = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+const pdfAmountFormatter = new Intl.NumberFormat("en-IN", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const formatAmountForPdf = (value) => `Rs. ${pdfAmountFormatter.format(Number(value) || 0)}`;
 
 // jsPDF is loaded lazily so a failure to import/build the PDF never breaks

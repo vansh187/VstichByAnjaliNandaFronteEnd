@@ -3,10 +3,12 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import { initLandingLocationCapture } from "./lib/locationCapture";
 import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
 import HomePage from "./pages/HomePage";
 import SummerLuxePage from "./pages/SummerLuxePage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import StoryPage from "./pages/StoryPage";
 import FaqPage from "./pages/FaqPage";
@@ -33,7 +35,10 @@ function App() {
 
   return (
     <>
-      <ScrollToTop pathname={routedLocation.pathname} />
+      {/* Includes search too, not just pathname - /search's route key varies
+          by query string while the pathname itself stays put, so a new
+          search from the navbar needs this to still reset scroll. */}
+      <ScrollToTop pathname={routedLocation.pathname + routedLocation.search} />
       {/* When navigated to with a backgroundLocation (e.g. clicking "Log In" from
           the landing/home page), the underlying page keeps rendering here so the
           login modal below can overlay it. Direct/refresh visits to /login fall
@@ -41,6 +46,8 @@ function App() {
       <Routes location={routedLocation}>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/verify-email/:userId/:token" element={<EmailVerificationPage />} />
+        <Route path="/verify-email" element={<EmailVerificationPage />} />
         <Route
           path="/home"
           element={
@@ -62,6 +69,10 @@ function App() {
           path="/product/:productId"
           element={<ProductDetailPage key={location.pathname} />}
         />
+        {/* keyed by search string so a new query while already on this page
+            remounts into a clean useProducts state, same reasoning as
+            CollectionPage above */}
+        <Route path="/search" element={<SearchResultsPage key={location.search} />} />
         <Route path="/our-story" element={<StoryPage />} />
         <Route path="/faqs" element={<FaqPage />} />
         <Route

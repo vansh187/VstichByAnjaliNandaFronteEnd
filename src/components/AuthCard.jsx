@@ -2,7 +2,12 @@ import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
-import { requestPasswordResetOtp, confirmPasswordReset, updateUserLocation } from "../lib/api";
+import {
+  requestPasswordResetOtp,
+  confirmPasswordReset,
+  updateUserLocation,
+  resendVerificationEmail,
+} from "../lib/api";
 import { getLandingLocation } from "../lib/locationCapture";
 import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
@@ -103,6 +108,8 @@ export default function AuthCard({ onClose }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showSignupResend, setShowSignupResend] = useState(false);
+  const [resendingSignupEmail, setResendingSignupEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -169,11 +176,31 @@ export default function AuthCard({ onClose }) {
     setFieldErrors({});
     setFormError("");
     setSuccessMessage("");
+    setShowSignupResend(false);
+    setResendingSignupEmail(false);
     setForgotStep("request");
     setResetEmail("");
     setOtp("");
     setNewPassword("");
     setConfirmNewPassword("");
+  };
+
+  const handleResendSignupVerification = async () => {
+    if (!fields.email.trim()) {
+      setFormError("Please enter your email address before requesting a new verification email.");
+      return;
+    }
+
+    setResendingSignupEmail(true);
+    try {
+      await resendVerificationEmail({ email: fields.email.trim().toLowerCase() });
+      setFormError("");
+      setSuccessMessage("A fresh verification email has been sent. Please check your inbox and spam folder.");
+    } catch (err) {
+      setFormError(err.message || "We couldn’t send a new verification email right now.");
+    } finally {
+      setResendingSignupEmail(false);
+    }
   };
 
   const handleRequestOtp = async (e) => {
@@ -255,7 +282,7 @@ export default function AuthCard({ onClose }) {
     try {
       if (mode === "signup") {
         const { allowed, googleMapsLink } = await getLandingLocation();
-        await auth.signup({
+        const data = await auth.signup({
           vstitch_user_name: fields.vstitch_user_name.trim(),
           password: fields.password,
           first_name: fields.first_name.trim(),
@@ -265,7 +292,10 @@ export default function AuthCard({ onClose }) {
           location_permission_granted: allowed,
           ...(allowed && googleMapsLink ? { google_maps_link: googleMapsLink } : {}),
         });
-        setSuccessMessage("Account created! Log in below to continue.");
+        setSuccessMessage(
+          data?.message || "Account created successfully. Please verify your email to place orders.",
+        );
+        setShowSignupResend(true);
         setFields((f) => ({ ...emptyFields, vstitch_user_name: f.vstitch_user_name }));
         setMode("login");
       } else {
@@ -332,9 +362,21 @@ export default function AuthCard({ onClose }) {
 
       <div className="styled-scroll overflow-y-auto px-8 pb-8 pt-6 sm:px-10 sm:pb-10">
         {successMessage && (
-          <p className="mb-6 border border-gold-light bg-sand/60 px-4 py-3 text-sm text-ink">
-            {successMessage}
-          </p>
+          <div className="mb-6 space-y-3">
+            <p className="border border-gold-light bg-sand/60 px-4 py-3 text-sm text-ink">
+              {successMessage}
+            </p>
+            {showSignupResend && mode === "login" && (
+              <button
+                type="button"
+                onClick={handleResendSignupVerification}
+                disabled={resendingSignupEmail}
+                className="w-full border border-ink bg-ink px-4 py-3 text-xs font-medium tracking-[0.16em] text-cream uppercase transition-colors hover:bg-charcoal disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {resendingSignupEmail ? "Sending…" : "Resend verification email"}
+              </button>
+            )}
+          </div>
         )}
         {formError && (
           <p className="mb-6 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
