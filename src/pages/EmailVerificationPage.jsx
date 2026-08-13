@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { verifyEmail } from "../lib/api";
+import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 import { parseVerificationParams } from "../utils/verification";
 
 export default function EmailVerificationPage() {
@@ -8,6 +9,11 @@ export default function EmailVerificationPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("Verifying your email...");
+
+  const redirectToLogin = () => {
+    const loginUrl = new URL("/login", FRONTEND_BASE_URL).toString();
+    window.location.assign(loginUrl);
+  };
 
   useEffect(() => {
     let active = true;
@@ -30,7 +36,7 @@ export default function EmailVerificationPage() {
         setMessage(data.message || "Email verification success. Please login to continue.");
 
         window.setTimeout(() => {
-          window.location.href = "/login";
+          redirectToLogin();
         }, 2500);
       } catch (err) {
         if (!active) return;
@@ -42,7 +48,7 @@ export default function EmailVerificationPage() {
         const lower = detail.toLowerCase();
         if (lower.includes("already verified") || lower.includes("already been used")) {
           window.setTimeout(() => {
-            navigate("/login", { replace: true });
+            redirectToLogin();
           }, 2200);
         }
       }
