@@ -9,7 +9,7 @@
 import { createServer } from "node:http";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { fetchAllRoutes } from "./catalog.js";
 
 const DIST_DIR = path.resolve(process.cwd(), "dist");
@@ -71,6 +71,49 @@ function startServer() {
   });
 }
 
+const BASE_ARGS = [
+  // Chrome's own sandbox needs kernel privileges (user namespaces) that
+  // CI/build containers - Vercel's included - don't grant to an
+  // unprivileged process, so the default launch fails outright there even
+  // though it works fine on a normal dev machine. This crawler never
+  // renders untrusted content (only our own already-built dist/ output for
+  // this one automation task, then it's discarded), so running
+  // unsandboxed here carries none of the risk that flag normally implies
+  // for a real browsing session.
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  // The backend's CORS allowlist only permits the real production origin,
+  // but this crawl serves the build from a local port (an arbitrary one -
+  // localhost in dev, an ephemeral build-container port on Vercel), so
+  // product/category fetches would otherwise be blocked. Safe for the
+  // same reason as above: this instance only ever talks to our own build
+  // output and our own API.
+  "--disable-web-security",
+  "--disable-features=IsolateOrigins,site-per-process",
+];
+
+// Vercel's build image is missing the desktop-Chrome shared-library stack
+// (libnspr4.so and friends) that a normal Puppeteer-bundled Chromium needs,
+// so that binary fails to even launch there ("error while loading shared
+// libraries"). @sparticuz/chromium ships a build made specifically for
+// serverless/CI containers like this one - used only when actually running
+// on Vercel (it sets VERCEL=1 during builds); a local dev machine has the
+// full library set, so it just reuses the `puppeteer` package's own
+// downloaded Chrome instead of needing this at all.
+async function resolveLaunchOptions() {
+  if (process.env.VERCEL) {
+    const { default: chromium } = await import("@sparticuz/chromium");
+    return {
+      headless: true,
+      executablePath: await chromium.executablePath(),
+      args: [...chromium.args, ...BASE_ARGS],
+    };
+  }
+
+  const { default: fullPuppeteer } = await import("puppeteer");
+  return { headless: true, executablePath: await fullPuppeteer.executablePath(), args: BASE_ARGS };
+}
+
 async function snapshotRoute(browser, route) {
   const page = await browser.newPage();
   try {
@@ -107,18 +150,7 @@ async function run() {
   const orderedRoutes = [...routes.filter((r) => r !== "/"), "/"];
 
   const server = await startServer();
-  // The backend's CORS allowlist only permits the real production origin,
-  // but this crawl serves the build from a local port (an arbitrary one -
-  // localhost in dev, an ephemeral build-container port on Vercel), so
-  // product/category fetches would otherwise be blocked. --disable-web-
-  // security turns off the browser's origin checks entirely - safe here
-  // because this Chromium instance only ever crawls our own already-built
-  // dist/ output for this one automation task, then gets thrown away; it
-  // never renders third-party or user-supplied content.
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--disable-web-security", "--disable-features=IsolateOrigins,site-per-process"],
-  });
+  const browser = await puppeteer.launch(await resolveLaunchOptions());
 
   let succeeded = 0;
   try {
