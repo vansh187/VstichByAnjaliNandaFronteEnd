@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
+import { useSeo } from "../hooks/useSeo";
 import { sortProducts } from "../utils/productFilters";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
@@ -110,6 +111,13 @@ export default function CollectionsPage() {
   const revealRef = useReveal();
   const { categories, loading, error, reload } = useCategories();
   const [videoFailed, setVideoFailed] = useState(false);
+
+  useSeo({
+    title: "Shop All Collections | VStitch by Anjali Nanda",
+    description:
+      "Browse every VStitch by Anjali Nanda collection — handcrafted sarees, suits, lehengas and bespoke bridal wear, with colors, sizes and availability for each piece.",
+    path: "/collections",
+  });
 
   return (
     <div ref={revealRef}>

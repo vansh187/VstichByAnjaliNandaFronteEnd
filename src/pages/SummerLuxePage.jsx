@@ -5,10 +5,18 @@ import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import StateNotice from "../components/StateNotice";
 import { useReveal } from "../hooks/useReveal";
+import { useSeo } from "../hooks/useSeo";
 
 export default function SummerLuxePage() {
   const revealRef = useReveal();
   const navigate = useNavigate();
+
+  useSeo({
+    title: "Summer Luxe | VStitch by Anjali Nanda",
+    description:
+      "The Summer Luxe collection from VStitch by Anjali Nanda is arriving soon — handcrafted pieces for the season, coming shortly.",
+    path: "/summer-luxe",
+  });
 
   return (
     <div ref={revealRef}>

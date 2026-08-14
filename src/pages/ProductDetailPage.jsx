@@ -20,7 +20,9 @@ import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
 import { useSwipe } from "../hooks/useSwipe";
+import { useSeo } from "../hooks/useSeo";
 import { getProductDetail } from "../lib/catalogApi";
+import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 import { formatINR } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
@@ -114,13 +116,6 @@ export default function ProductDetailPage() {
     };
   }, [productId, validId]);
 
-  useEffect(() => {
-    if (detail) document.title = `${detail.product_name} | VStitch by Anjali Nanda`;
-    return () => {
-      document.title = "VStitch by Anjali Nanda | Handcrafted Couture & Bespoke Tailoring";
-    };
-  }, [detail]);
-
   const images = useMemo(() => {
     if (!detail) return [];
     return [...detail.images].sort((a, b) => a.display_order - b.display_order);
@@ -164,6 +159,65 @@ export default function ProductDetailPage() {
     const max = Math.max(...prices);
     return min === max ? formatINR(min) : `${formatINR(min)} – ${formatINR(max)}`;
   }, [detail]);
+
+  // Truncated to ~155 chars, the practical length before Google starts
+  // clipping a meta description in search results.
+  const metaDescription = useMemo(() => {
+    if (!detail) return undefined;
+    const base = detail.description || `Handcrafted ${detail.category_name} by VStitch by Anjali Nanda.`;
+    return base.length > 155 ? `${base.slice(0, 154).trimEnd()}…` : base;
+  }, [detail]);
+
+  // No sku/brand/updated_at field exists on the product API response yet
+  // (only variant color/size/price/stock_quantity) - "Brand" here is the
+  // storefront's own fixed brand name, not per-product backend data.
+  const jsonLd = useMemo(() => {
+    if (!detail) return undefined;
+    const url = `${FRONTEND_BASE_URL}/product/${detail.vstitch_product_id}`;
+    const prices = detail.variants.map((v) => v.price);
+    return [
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: detail.product_name,
+        description: metaDescription,
+        image: images.map((img) => img.image_url),
+        category: detail.category_name,
+        brand: { "@type": "Brand", name: "VStitch by Anjali Nanda" },
+        offers: {
+          "@type": "AggregateOffer",
+          priceCurrency: "INR",
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: detail.variants.length,
+          availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          url,
+        },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${FRONTEND_BASE_URL}/` },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: detail.category_name,
+            item: `${FRONTEND_BASE_URL}/collections/${detail.category_id}`,
+          },
+          { "@type": "ListItem", position: 3, name: detail.product_name, item: url },
+        ],
+      },
+    ];
+  }, [detail, images, inStock, metaDescription]);
+
+  useSeo({
+    title: detail ? `${detail.product_name} | VStitch by Anjali Nanda` : undefined,
+    description: metaDescription,
+    path: detail ? `/product/${detail.vstitch_product_id}` : undefined,
+    image: images[0]?.image_url,
+    jsonLd,
+  });
 
   const selectColor = (color) => {
     setSelectedColor(color);
@@ -293,7 +347,7 @@ export default function ProductDetailPage() {
                     {activeImage?.image_url && !imgError ? (
                       <img
                         src={activeImage.image_url}
-                        alt={detail.product_name}
+                        alt={`${detail.product_name} — ${detail.category_name}, VStitch by Anjali Nanda`}
                         onError={() => setImgError(true)}
                         className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
                       />

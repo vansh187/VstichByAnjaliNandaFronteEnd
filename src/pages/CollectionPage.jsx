@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { useReveal } from "../hooks/useReveal";
 import { useCategories } from "../hooks/useCategories";
 import { useProducts } from "../hooks/useProducts";
+import { useSeo } from "../hooks/useSeo";
+import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 import { getCategoryQuote } from "../utils/categoryTheme";
 import { sortProducts } from "../utils/productFilters";
 import AnnouncementBar from "../components/AnnouncementBar";
@@ -58,6 +60,34 @@ export default function CollectionPage() {
   const notFound =
     !categoriesLoading && !categoriesError && Number.isFinite(categoryId) && !category;
   const invalidId = !Number.isFinite(categoryId);
+
+  const displayName = category ? withBrandPrefix(category.category_name) : undefined;
+  const breadcrumbJsonLd = useMemo(() => {
+    if (!category) return undefined;
+    return {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${FRONTEND_BASE_URL}/` },
+        { "@type": "ListItem", position: 2, name: "Collections", item: `${FRONTEND_BASE_URL}/collections` },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: displayName,
+          item: `${FRONTEND_BASE_URL}/collections/${category.vstitch_category_id}`,
+        },
+      ],
+    };
+  }, [category, displayName]);
+
+  useSeo({
+    title: category ? `${displayName} | VStitch by Anjali Nanda` : undefined,
+    description: category
+      ? `Shop the ${displayName} collection at VStitch by Anjali Nanda — handcrafted pieces with colors, sizes and availability for each design.`
+      : undefined,
+    path: category ? `/collections/${category.vstitch_category_id}` : undefined,
+    jsonLd: breadcrumbJsonLd,
+  });
 
   return (
     <div ref={revealRef}>

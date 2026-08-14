@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import { useReveal } from "../hooks/useReveal";
+import { useSeo } from "../hooks/useSeo";
 import { ChevronRightIcon, PlusIcon, MinusIcon } from "../components/Icons";
 
 const PAGE_TITLE = "FAQs — Sarees, Shipping, Returns & Custom Tailoring | VStitch by Anjali Nanda";
@@ -132,53 +133,31 @@ function FaqItem({ item, isOpen, onToggle }) {
   );
 }
 
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqGroups.flatMap((group) =>
+    group.questions.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  ),
+};
+
 export default function FaqPage() {
   const revealRef = useReveal();
   const [openKey, setOpenKey] = useState("Orders & Shipping-0");
 
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = PAGE_TITLE;
-
-    let metaDescription = document.querySelector('meta[name="description"]');
-    const createdMeta = !metaDescription;
-    if (!metaDescription) {
-      metaDescription = document.createElement("meta");
-      metaDescription.setAttribute("name", "description");
-      document.head.appendChild(metaDescription);
-    }
-    const previousDescription = metaDescription.getAttribute("content");
-    metaDescription.setAttribute("content", PAGE_DESCRIPTION);
-
-    const structuredData = document.createElement("script");
-    structuredData.type = "application/ld+json";
-    structuredData.id = "faq-structured-data";
-    structuredData.text = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: faqGroups.flatMap((group) =>
-        group.questions.map((item) => ({
-          "@type": "Question",
-          name: item.question,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.answer,
-          },
-        })),
-      ),
-    });
-    document.head.appendChild(structuredData);
-
-    return () => {
-      document.title = previousTitle;
-      if (createdMeta) {
-        metaDescription.remove();
-      } else if (previousDescription !== null) {
-        metaDescription.setAttribute("content", previousDescription);
-      }
-      structuredData.remove();
-    };
-  }, []);
+  useSeo({
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    path: "/faqs",
+    jsonLd: FAQ_JSON_LD,
+  });
 
   return (
     <div ref={revealRef}>

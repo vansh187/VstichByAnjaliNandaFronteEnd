@@ -3,9 +3,17 @@ import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import { useReveal } from "../hooks/useReveal";
+import { useSeo } from "../hooks/useSeo";
 
 export default function StoryPage() {
   const revealRef = useReveal();
+
+  useSeo({
+    title: "Our Story | VStitch by Anjali Nanda",
+    description:
+      "VStitch by Anjali Nanda is a slow-luxury Indian couture label founded by Anjali Nanda, crafting handcrafted sarees, suits and bespoke bridal wear with 60+ artisans.",
+    path: "/our-story",
+  });
 
   return (
     <div ref={revealRef}>
