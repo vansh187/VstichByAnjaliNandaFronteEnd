@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { instagramTiles } from "../data/marketing";
 import Swatch from "./Swatch";
 import { InstagramIcon } from "./Icons";
+import { INSTAGRAM_URL } from "../utils/contact";
 
 // Tiles play silently, no exceptions - per client request, there is no
 // unmute control here even for a future musicSrc track.
@@ -58,7 +59,9 @@ function InstagramVideoTile({ tile, index }) {
       />
 
       <a
-        href="#"
+        href={INSTAGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
         aria-label="View on Instagram"
         className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-ink/40 text-cream opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       >

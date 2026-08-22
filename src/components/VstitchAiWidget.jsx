@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { inputClass } from "../utils/inputClass";
 import { submitCustomizationInterest } from "../lib/catalogApi";
+import { whatsappHref } from "../utils/contact";
 import FormField from "./FormField";
 import {
   ChatBubbleIcon,
@@ -11,7 +12,6 @@ import {
   CheckCircleIcon,
 } from "./Icons";
 
-const WHATSAPP_NUMBER = "919953149142";
 const ADMIN_EMAIL = "vstitchbyanjalinanda@gmail.com";
 const TOOLTIP_DELAY_MS = 1500;
 
@@ -19,7 +19,7 @@ const CONSULTATION_MESSAGE =
   "Hi VStitch! I'd love to book a private styling consultation with Anjali Nanda to find pieces made for me.";
 
 function consultationHref() {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(CONSULTATION_MESSAGE)}`;
+  return whatsappHref(CONSULTATION_MESSAGE);
 }
 
 function customizationFallbackMessage({ name, phone, email }) {
@@ -32,7 +32,7 @@ function customizationFallbackMessage({ name, phone, email }) {
 }
 
 function customizationWhatsappHref(values) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(customizationFallbackMessage(values))}`;
+  return whatsappHref(customizationFallbackMessage(values));
 }
 
 function adminMailHref({ name, phone, email }) {
