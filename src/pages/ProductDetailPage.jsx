@@ -20,7 +20,9 @@ import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
 import { useSwipe } from "../hooks/useSwipe";
+import { useSeo } from "../hooks/useSeo";
 import { getProductDetail } from "../lib/catalogApi";
+import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 import { formatINR } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
@@ -30,6 +32,20 @@ import { sortSizes } from "../utils/variants";
 // "Custom" badge and the entered measurements survive a page reload — the
 // backend has no GET endpoint yet to fetch a user's past requests.
 const CUSTOM_FIT_STORAGE_KEY = "vstitch_custom_fit_requests";
+
+// A few lehenga sets (confirmed: product ids 67-69) sell the jacket/blouse
+// on its own as well as the complete set, at very different prices, but
+// under the SAME color+size - the backend has no dedicated field for this,
+// only a "-BLOUSE-" marker inside the variant SKU. That made every size
+// pick land on an arbitrary one of the two priced variants and the
+// headline price render as one confusing combined range (e.g.
+// "₹19,500 - ₹45,500") with no way to actually choose which you're
+// buying. Flag to backend: a real `piece_type`/`variant_group` field would
+// make this a lot less fragile than parsing SKU strings.
+const BLOUSE_ONLY_SKU_MARKER = "-BLOUSE-";
+function getPiece(sku) {
+  return sku && sku.toUpperCase().includes(BLOUSE_ONLY_SKU_MARKER) ? "Blouse Only" : "Full Set";
+}
 
 function readCustomFitStore() {
   try {
@@ -61,6 +77,7 @@ export default function ProductDetailPage() {
   const [error, setError] = useState(null);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [selectedPiece, setSelectedPiece] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [manualSize, setManualSize] = useState(null);
   const [qty, setQty] = useState(1);
@@ -114,36 +131,49 @@ export default function ProductDetailPage() {
     };
   }, [productId, validId]);
 
-  useEffect(() => {
-    if (detail) document.title = `${detail.product_name} | VStitch by Anjali Nanda`;
-    return () => {
-      document.title = "VStitch by Anjali Nanda | Handcrafted Couture & Bespoke Tailoring";
-    };
-  }, [detail]);
-
   const images = useMemo(() => {
     if (!detail) return [];
     return [...detail.images].sort((a, b) => a.display_order - b.display_order);
   }, [detail]);
 
-  const availableColors = useMemo(() => {
+  // Only surfaced as a UI choice when a product actually has more than one
+  // piece grouping - every other product resolves to a single implicit
+  // "Full Set" and the selector below never renders.
+  const pieceOptions = useMemo(() => {
     if (!detail) return [];
-    return [...new Set(detail.variants.map((v) => v.color))];
+    const pieces = [...new Set(detail.variants.map((v) => getPiece(v.sku)))];
+    // "Full Set" first so a fresh visitor's default price is the complete
+    // product, not whichever happens to sort first.
+    return pieces.sort((a) => (a === "Full Set" ? -1 : 1));
   }, [detail]);
+
+  const effectivePiece =
+    selectedPiece && pieceOptions.includes(selectedPiece) ? selectedPiece : pieceOptions[0] ?? null;
+
+  const variantsForPiece = useMemo(() => {
+    if (!detail) return [];
+    return pieceOptions.length > 1
+      ? detail.variants.filter((v) => getPiece(v.sku) === effectivePiece)
+      : detail.variants;
+  }, [detail, effectivePiece, pieceOptions]);
+
+  const availableColors = useMemo(
+    () => [...new Set(variantsForPiece.map((v) => v.color))],
+    [variantsForPiece],
+  );
 
   // Derived at render time (not synced via effect): whatever the user
   // explicitly picked, as long as it's still a real option for this
-  // product, otherwise the first available color once data has loaded.
+  // product/piece, otherwise the first available color once data has loaded.
   const effectiveColor =
     selectedColor && availableColors.includes(selectedColor) ? selectedColor : availableColors[0] ?? null;
 
   const variantsForColor = useMemo(() => {
-    if (!detail) return [];
     const variants = effectiveColor
-      ? detail.variants.filter((v) => v.color === effectiveColor)
-      : detail.variants;
+      ? variantsForPiece.filter((v) => v.color === effectiveColor)
+      : variantsForPiece;
     return sortSizes(variants);
-  }, [detail, effectiveColor]);
+  }, [variantsForPiece, effectiveColor]);
 
   const autoSize = variantsForColor.find((v) => v.stock_quantity > 0)?.size ?? "";
   const selectedSize =
@@ -153,17 +183,86 @@ export default function ProductDetailPage() {
     ? customRequests[selectedVariant.vstitch_product_variant_id]
     : null;
 
-  const inStock = detail ? detail.variants.some((v) => v.stock_quantity > 0) : false;
+  const inStock = variantsForPiece.some((v) => v.stock_quantity > 0);
   const canOrder = inStock && selectedVariant && selectedVariant.stock_quantity > 0;
   const maxQty = selectedVariant ? Math.min(selectedVariant.stock_quantity, 10) : 1;
 
+  // Scoped to the selected piece, not the whole product - this is what
+  // turns the old "₹19,500 – ₹45,500" combined range into one clear price
+  // for whichever piece is actually selected.
   const priceLabel = useMemo(() => {
-    if (!detail || detail.variants.length === 0) return "";
-    const prices = detail.variants.map((v) => v.price);
+    if (variantsForPiece.length === 0) return "";
+    const prices = variantsForPiece.map((v) => v.price);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     return min === max ? formatINR(min) : `${formatINR(min)} – ${formatINR(max)}`;
+  }, [variantsForPiece]);
+
+  // Truncated to ~155 chars, the practical length before Google starts
+  // clipping a meta description in search results.
+  const metaDescription = useMemo(() => {
+    if (!detail) return undefined;
+    const base = detail.description || `Handcrafted ${detail.category_name} by VStitch by Anjali Nanda.`;
+    return base.length > 155 ? `${base.slice(0, 154).trimEnd()}…` : base;
   }, [detail]);
+
+  // No sku/brand/updated_at field exists on the product API response yet
+  // (only variant color/size/price/stock_quantity) - "Brand" here is the
+  // storefront's own fixed brand name, not per-product backend data.
+  const jsonLd = useMemo(() => {
+    if (!detail) return undefined;
+    const url = `${FRONTEND_BASE_URL}/product/${detail.vstitch_product_id}`;
+    const prices = detail.variants.map((v) => v.price);
+    return [
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: detail.product_name,
+        description: metaDescription,
+        image: images.map((img) => img.image_url),
+        category: detail.category_name,
+        brand: { "@type": "Brand", name: "VStitch by Anjali Nanda" },
+        offers: {
+          "@type": "AggregateOffer",
+          priceCurrency: "INR",
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: detail.variants.length,
+          availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          url,
+        },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${FRONTEND_BASE_URL}/` },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: detail.category_name,
+            item: `${FRONTEND_BASE_URL}/collections/${detail.category_id}`,
+          },
+          { "@type": "ListItem", position: 3, name: detail.product_name, item: url },
+        ],
+      },
+    ];
+  }, [detail, images, inStock, metaDescription]);
+
+  useSeo({
+    title: detail ? `${detail.product_name} | VStitch by Anjali Nanda` : undefined,
+    description: metaDescription,
+    path: detail ? `/product/${detail.vstitch_product_id}` : undefined,
+    image: images[0]?.image_url,
+    jsonLd,
+  });
+
+  const selectPiece = (piece) => {
+    setSelectedPiece(piece);
+    setSelectedColor(null);
+    setManualSize(null);
+    setQty(1);
+  };
 
   const selectColor = (color) => {
     setSelectedColor(color);
@@ -210,7 +309,7 @@ export default function ProductDetailPage() {
         // order API at checkout, so it must stay the real numeric variant id.
         id: selectedVariant.vstitch_product_variant_id,
         productId: detail.vstitch_product_id,
-        name: detail.product_name,
+        name: pieceOptions.length > 1 ? `${detail.product_name} — ${effectivePiece}` : detail.product_name,
         size: selectedVariant.size,
         color: effectiveColor,
         price: selectedVariant.price,
@@ -293,7 +392,7 @@ export default function ProductDetailPage() {
                     {activeImage?.image_url && !imgError ? (
                       <img
                         src={activeImage.image_url}
-                        alt={detail.product_name}
+                        alt={`${detail.product_name} — ${detail.category_name}, VStitch by Anjali Nanda`}
                         onError={() => setImgError(true)}
                         className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
                       />
@@ -371,6 +470,35 @@ export default function ProductDetailPage() {
                   {detail.product_name}
                 </h1>
                 <p className="mt-3 text-xl font-medium text-ink">{priceLabel}</p>
+
+                {pieceOptions.length > 1 && (
+                  <div className="mt-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">
+                      Buy{effectivePiece ? `: ${effectivePiece}` : ""}
+                    </p>
+                    <div
+                      className="mt-2 inline-flex border border-sand-dark"
+                      role="group"
+                      aria-label="Choose what you're buying"
+                    >
+                      {pieceOptions.map((piece) => (
+                        <button
+                          key={piece}
+                          type="button"
+                          aria-pressed={effectivePiece === piece}
+                          onClick={() => selectPiece(piece)}
+                          className={`px-4 py-2.5 text-xs font-medium tracking-widest uppercase transition-colors ${
+                            effectivePiece === piece
+                              ? "bg-ink text-cream"
+                              : "text-ink hover:bg-sand/60"
+                          }`}
+                        >
+                          {piece}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {detail.description && (
                   <p className="mt-5 max-w-lg text-sm leading-relaxed text-charcoal/75">

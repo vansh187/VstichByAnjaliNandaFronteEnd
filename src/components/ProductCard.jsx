@@ -101,7 +101,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
         {product.primary_image_url && !imgError ? (
           <img
             src={product.primary_image_url}
-            alt={product.product_name}
+            alt={`${product.product_name} — ${product.category_name}, VStitch by Anjali Nanda`}
             loading="lazy"
             onError={() => setImgError(true)}
             className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-110"

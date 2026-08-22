@@ -20,6 +20,7 @@ import CartDrawer from "./components/CartDrawer";
 import VstitchAiWidget from "./components/VstitchAiWidget";
 import CartToast from "./components/CartToast";
 import ScrollToTop from "./components/ScrollToTop";
+import BackButton from "./components/BackButton";
 
 function App() {
   const location = useLocation();
@@ -110,6 +111,7 @@ function App() {
       <CartDrawer />
       <VstitchAiWidget />
       <CartToast />
+      <BackButton />
     </>
   );
 }

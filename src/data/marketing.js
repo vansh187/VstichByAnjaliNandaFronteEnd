@@ -24,11 +24,12 @@ export const testimonials = [
   },
 ];
 
+// video: source clip played (silently) on hover/tap, in place of the
+// tile's static gradient.
 export const instagramTiles = [
-  { id: "ig1", tone: "from-[#9a2b2b] to-[#3a0d0d]" },
-  { id: "ig2", tone: "from-[#b1873f] to-[#5a3d17]" },
-  { id: "ig3", tone: "from-[#2f4a3e] to-[#0f1f18]" },
-  { id: "ig4", tone: "from-[#5a2f6b] to-[#1f0f2b]" },
-  { id: "ig5", tone: "from-[#1c3a52] to-[#08151f]" },
-  { id: "ig6", tone: "from-[#a1163d] to-[#3d0a1a]" },
+  { id: "ig1", tone: "from-[#9a2b2b] to-[#3a0d0d]", video: "/static/instagram/v1.mp4" },
+  { id: "ig2", tone: "from-[#b1873f] to-[#5a3d17]", video: "/static/instagram/v2.mp4" },
+  { id: "ig3", tone: "from-[#2f4a3e] to-[#0f1f18]", video: "/static/instagram/v3.mp4" },
+  { id: "ig4", tone: "from-[#5a2f6b] to-[#1f0f2b]", video: "/static/instagram/v4.mp4" },
+  { id: "ig5", tone: "from-[#1c3a52] to-[#08151f]", video: "/static/instagram/v5.mp4" },
 ];

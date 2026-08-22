@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /verify-email
+Disallow: /home
+Disallow: /checkout
+Disallow: /orders
+Disallow: /track-order
+Disallow: /search
+
+Sitemap: https://www.vstitchbyanjalinanda.com/sitemap.xml
