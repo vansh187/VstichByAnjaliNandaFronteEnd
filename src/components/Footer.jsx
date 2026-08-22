@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { InstagramIcon, WhatsappIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
+import { INSTAGRAM_URL, whatsappHref } from "../utils/contact";
+
+const WHATSAPP_MESSAGE = "Hi VStitch by Anjali Nanda! I'd like to know more about your collection.";
 import TermsOfServiceModal from "./TermsOfServiceModal";
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 
@@ -38,10 +41,22 @@ export default function Footer() {
               tailoring, made by artisans, worn for a lifetime.
             </p>
             <div className="mt-6 flex items-center gap-4">
-              <a href="#" aria-label="Instagram" className="text-cream/70 transition-colors hover:text-gold-light">
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="text-cream/70 transition-colors hover:text-gold-light"
+              >
                 <InstagramIcon />
               </a>
-              <a href="#" aria-label="WhatsApp" className="text-cream/70 transition-colors hover:text-gold-light">
+              <a
+                href={whatsappHref(WHATSAPP_MESSAGE)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="WhatsApp"
+                className="text-cream/70 transition-colors hover:text-gold-light"
+              >
                 <WhatsappIcon />
               </a>
             </div>
