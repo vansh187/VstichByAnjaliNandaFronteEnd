@@ -46,6 +46,15 @@ const CATEGORY_MEDIA = [
     poster: null,
     tagline: "Tailored precision, unmistakably yours.",
   },
+  {
+    // Backend category name is spelled "Lehnga" (see catalog data), but
+    // matching both spellings keeps this working if that's ever corrected.
+    keywords: ["lehnga", "lehenga"],
+    src: "/static/lehenga/lehenga-hero.mp4",
+    mobileSrc: null,
+    poster: null,
+    tagline: "Grandeur in every pleat, made to twirl.",
+  },
 ];
 
 function resolveMediaForCategory(categoryName = "") {
