@@ -15,6 +15,7 @@ import CouponBox from "../components/CouponBox";
 import { inputClass } from "../utils/inputClass";
 import { CheckCircleIcon } from "../components/Icons";
 import { LIMITS, PATTERNS, CHAR_FILTERS, isTooLong, sanitizeChars } from "../utils/validation";
+import { clearStoredVstitchUserId, readStoredVstitchUserId } from "../utils/vstitchUserId";
 
 const emptyShipping = {
   shipping_recipient_name: "",
@@ -150,12 +151,13 @@ async function pollPaymentStatus(orderId, token, { intervalMs = 1500, timeoutMs 
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
-  const { token, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
   const [fields, setFields] = useState(emptyShipping);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const [verificationResendSucceeded, setVerificationResendSucceeded] = useState(false);
   const [showVerificationResend, setShowVerificationResend] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -270,6 +272,8 @@ export default function CheckoutPage() {
     }));
 
   const handleOrderError = (err) => {
+    setVerificationResendSucceeded(false);
+
     if (err.status === 401) {
       logout();
       navigate("/login", { state: { from: { pathname: "/checkout" } } });
@@ -290,17 +294,36 @@ export default function CheckoutPage() {
   };
 
   const handleResendVerificationEmail = async () => {
-    if (!token) {
+    const userId = user?.id || readStoredVstitchUserId();
+    if (!userId) {
+      setVerificationResendSucceeded(false);
       setFormError("Please log in again to request a new verification email.");
       return;
     }
 
     setResendingVerification(true);
     try {
-      await resendVerificationEmail({}, token);
-      setFormError("A new verification email has been sent. Please check your inbox and spam folder.");
+      await resendVerificationEmail(userId);
+      setVerificationResendSucceeded(true);
+      setFormError("Verification email sent. Please check your inbox.");
     } catch (err) {
-      setFormError(err.message || "We couldn’t send a new verification email right now. Please try again later.");
+      setVerificationResendSucceeded(false);
+      if (err.status === 400) {
+        setShowVerificationResend(false);
+        setVerificationResendSucceeded(true);
+        setFormError("Your email is already verified. Please login.");
+        window.setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+        return;
+      }
+      if (err.status === 404) {
+        clearStoredVstitchUserId();
+        setShowVerificationResend(false);
+        setFormError("We couldn't find that account. Please log in again or sign up.");
+        return;
+      }
+      setFormError(err.message || "We couldn't send a new verification email right now. Please try again later.");
     } finally {
       setResendingVerification(false);
     }
@@ -406,6 +429,7 @@ export default function CheckoutPage() {
     const errors = validate(fields);
     setFieldErrors(errors);
     setFormError("");
+    setVerificationResendSucceeded(false);
     if (Object.keys(errors).length > 0) return;
 
     if (paymentMethod === "online") {
@@ -453,7 +477,13 @@ export default function CheckoutPage() {
 
               {formError && (
                 <div className="mt-6 space-y-3">
-                  <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <p
+                    className={`border px-4 py-3 text-sm ${
+                      verificationResendSucceeded
+                        ? "border-gold-light bg-sand/60 text-ink"
+                        : "border-red-300 bg-red-50 text-red-700"
+                    }`}
+                  >
                     {formError}
                   </p>
                   {showVerificationResend && (

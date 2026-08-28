@@ -7,6 +7,7 @@ import {
 } from "../lib/api";
 import { setUnauthorizedHandler } from "../lib/authEvents";
 import { isTokenExpired } from "../lib/jwt";
+import { clearStoredVstitchUserId, storeVstitchUserId } from "../utils/vstitchUserId";
 
 const STORAGE_KEY = "vstitch_auth";
 
@@ -22,11 +23,13 @@ function readStoredSession() {
     const token = parsed.token ?? null;
     if (token && isTokenExpired(token)) {
       localStorage.removeItem(STORAGE_KEY);
+      clearStoredVstitchUserId();
       return { user: null, token: null };
     }
     return { user: parsed.user ?? null, token };
   } catch {
     localStorage.removeItem(STORAGE_KEY);
+    clearStoredVstitchUserId();
     return { user: null, token: null };
   }
 }
@@ -38,8 +41,10 @@ export function AuthProvider({ children }) {
     setSession({ user: nextUser, token: nextToken });
     if (nextUser && nextToken) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: nextUser, token: nextToken }));
+      storeVstitchUserId(nextUser.id);
     } else {
       localStorage.removeItem(STORAGE_KEY);
+      clearStoredVstitchUserId();
     }
   }, []);
 
@@ -64,7 +69,11 @@ export function AuthProvider({ children }) {
     [persist],
   );
 
-  const signup = useCallback((payload) => signupRequest(payload), []);
+  const signup = useCallback(async (payload) => {
+    const data = await signupRequest(payload);
+    storeVstitchUserId(data?.vstitch_user_id);
+    return data;
+  }, []);
 
   const logout = useCallback(() => persist(null, null), [persist]);
 

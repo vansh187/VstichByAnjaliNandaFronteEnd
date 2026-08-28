@@ -12,8 +12,8 @@ export function verifyEmail(userId, token) {
   return get(`/verify-email/${userId}/${token}`);
 }
 
-export function resendVerificationEmail(payload, token) {
-  return post("/resend-verification-email", payload || {}, token);
+export function resendVerificationEmail(vstitchUserId) {
+  return post("/resend-verification-email", { vstitch_user_id: Number(vstitchUserId) });
 }
 
 export function googleLogin(payload) {
