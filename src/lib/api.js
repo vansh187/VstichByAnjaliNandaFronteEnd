@@ -1,4 +1,5 @@
 import { get, post } from "./http";
+import { normalizeVstitchUserId } from "../utils/vstitchUserId";
 
 export function signup(payload) {
   return post("/signup", payload);
@@ -12,8 +13,15 @@ export function verifyEmail(userId, token) {
   return get(`/verify-email/${userId}/${token}`);
 }
 
-export function resendVerificationEmail(payload, token) {
-  return post("/resend-verification-email", payload || {}, token);
+export function resendVerificationEmail(vstitchUserId) {
+  const normalizedUserId = normalizeVstitchUserId(vstitchUserId);
+  if (!normalizedUserId) {
+    const error = new Error("We couldn't find valid signup details. Please sign up again to receive a verification email.");
+    error.status = 422;
+    throw error;
+  }
+
+  return post("/resend-verification-email", { vstitch_user_id: normalizedUserId });
 }
 
 export function googleLogin(payload) {

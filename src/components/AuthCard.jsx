@@ -13,6 +13,7 @@ import { CloseIcon, EyeIcon, EyeOffIcon, GoogleIcon } from "./Icons";
 import FormField from "./FormField";
 import { inputClass } from "../utils/inputClass";
 import { LIMITS, PATTERNS, CHAR_FILTERS, isTooLong, sanitizeChars } from "../utils/validation";
+import { clearStoredVstitchUserId, readStoredVstitchUserId } from "../utils/vstitchUserId";
 
 const emailPattern = PATTERNS.EMAIL;
 
@@ -186,18 +187,31 @@ export default function AuthCard({ onClose }) {
   };
 
   const handleResendSignupVerification = async () => {
-    if (!fields.email.trim()) {
-      setFormError("Please enter your email address before requesting a new verification email.");
+    const userId = readStoredVstitchUserId();
+    if (!userId) {
+      setFormError("We couldn't find your signup details. Please sign up again to receive a new verification email.");
       return;
     }
 
     setResendingSignupEmail(true);
     try {
-      await resendVerificationEmail({ email: fields.email.trim().toLowerCase() });
+      await resendVerificationEmail(userId);
       setFormError("");
-      setSuccessMessage("A fresh verification email has been sent. Please check your inbox and spam folder.");
+      setSuccessMessage("Verification email sent. Please check your inbox.");
     } catch (err) {
-      setFormError(err.message || "We couldn’t send a new verification email right now.");
+      if (err.status === 400) {
+        setFormError("");
+        setSuccessMessage("Your email is already verified. Please login.");
+        setShowSignupResend(false);
+        return;
+      }
+      if (err.status === 404) {
+        clearStoredVstitchUserId();
+        setShowSignupResend(false);
+        setFormError("We couldn't find that account. Please sign up again to receive a verification email.");
+        return;
+      }
+      setFormError(err.message || "We couldn't send a new verification email right now.");
     } finally {
       setResendingSignupEmail(false);
     }
@@ -266,6 +280,9 @@ export default function AuthCard({ onClose }) {
     } catch (err) {
       setFormError(err.message || "Something went wrong. Please try again.");
       if (err.fieldErrors) setFieldErrors(err.fieldErrors);
+      if (mode === "login" && /verify|verified/i.test(err.message || "")) {
+        setShowSignupResend(Boolean(readStoredVstitchUserId()));
+      }
     } finally {
       setLoading(false);
     }
