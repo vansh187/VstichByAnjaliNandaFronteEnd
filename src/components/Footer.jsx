@@ -153,7 +153,18 @@ export default function Footer() {
 
       <div className="border-t border-cream/10">
         <div className="mx-auto flex max-w-7xl flex-col-reverse items-center justify-between gap-4 px-5 py-6 text-xs text-cream/55 sm:flex-row sm:px-8">
-          <p>&copy; {year} VStitch by Anjali Nanda. All rights reserved.</p>
+          <p>
+            &copy; {year} VStitch by Anjali Nanda. All rights reserved. Website by{" "}
+            <a
+              href="https://webneststudio.co.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-underline text-cream/70 transition-colors hover:text-gold-light"
+            >
+              WebNest Studio
+            </a>
+            .
+          </p>
           <div className="flex items-center gap-3 tracking-widest uppercase">
             <span>Visa</span>
             <span>Mastercard</span>
