@@ -19,6 +19,8 @@ function normalizeError(status, data) {
   const message =
     typeof data?.detail === "string"
       ? data.detail
+      : typeof data?.error === "string"
+        ? data.error
       : "Something went wrong. Please try again later.";
   const error = new Error(message);
   error.status = status;
