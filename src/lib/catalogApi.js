@@ -32,7 +32,12 @@ const productDetailCache = new Map();
 export function getProductDetail(productId, { force = false } = {}) {
   if (force || !productDetailCache.has(productId)) {
     const promise = get(`/products/${productId}`).catch((err) => {
-      productDetailCache.delete(productId);
+      // Only evict if this is still the current entry - a slow failing
+      // request (e.g. backend cold start) must not delete a newer promise
+      // that a forced retry has since put in its place.
+      if (productDetailCache.get(productId) === promise) {
+        productDetailCache.delete(productId);
+      }
       throw err;
     });
     productDetailCache.set(productId, promise);

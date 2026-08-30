@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { getProductDetail } from "../lib/catalogApi";
@@ -22,28 +22,63 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
   const [manualSize, setManualSize] = useState(null);
   const [added, setAdded] = useState(false);
 
-  // Only fetches — the "start loading" reset belongs to whoever triggers a
-  // refetch (mount effect relies on the initial state above; the retry link
-  // sets it explicitly since it runs from a click, not an effect).
-  const fetchDetail = useCallback(() => {
-    if (!product.in_stock) return Promise.resolve();
-    return getProductDetail(product.vstitch_product_id)
-      .then((data) => {
-        setDetail(data);
-        setDetailError(null);
-      })
-      .catch((err) => setDetailError(err.message))
-      .finally(() => setDetailLoading(false));
-  }, [product.vstitch_product_id, product.in_stock]);
+  // The backend is on a tier that cold-starts (~30-60s to wake), so this
+  // first request usually fails on a cold page load. We don't want the
+  // customer to see that: while automatic retries remain, a failure keeps
+  // the benign "Loading…" state and bumps `retryTick` so the backoff effect
+  // below tries again — `detailError` is only set once the whole cold-start
+  // window is exhausted. `force` bypasses the module cache so a retry
+  // actually re-hits the network instead of reusing the cached in-flight
+  // (and about-to-fail) promise.
+  const MAX_AUTO_RETRIES = 5;
+  const autoRetriesRef = useRef(0);
+  const [retryTick, setRetryTick] = useState(0);
+
+  const fetchDetail = useCallback(
+    (force = false) => {
+      if (!product.in_stock) return Promise.resolve();
+      return getProductDetail(product.vstitch_product_id, { force })
+        .then((data) => {
+          setDetail(data);
+          setDetailError(null);
+          setDetailLoading(false);
+        })
+        .catch((err) => {
+          if (autoRetriesRef.current < MAX_AUTO_RETRIES) {
+            setRetryTick((n) => n + 1);
+          } else {
+            setDetailError(err.message);
+            setDetailLoading(false);
+          }
+        });
+    },
+    [product.vstitch_product_id, product.in_stock],
+  );
 
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail]);
 
+  // Exponential backoff (~2s, 4s, 8s, 16s, 30s — capped) that spans a full
+  // cold start. Driven by retryTick, which fetchDetail bumps on each failure
+  // while retries remain; each attempt stops the moment the fetch succeeds
+  // (detailError/loading cleared, no further tick) or the card unmounts.
+  useEffect(() => {
+    if (retryTick === 0 || autoRetriesRef.current >= MAX_AUTO_RETRIES) return undefined;
+    const delay = Math.min(2000 * 2 ** autoRetriesRef.current, 30000);
+    const timer = setTimeout(() => {
+      autoRetriesRef.current += 1;
+      fetchDetail(true);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [retryTick, fetchDetail]);
+
   const retryDetail = () => {
+    autoRetriesRef.current = 0;
+    setRetryTick(0);
     setDetailLoading(true);
     setDetailError(null);
-    fetchDetail();
+    fetchDetail(true);
   };
 
   const selectColor = (color) => {
