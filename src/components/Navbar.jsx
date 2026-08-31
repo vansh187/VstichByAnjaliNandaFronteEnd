@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
@@ -8,15 +8,60 @@ import AccountMenu from "./AccountMenu";
 import { BagIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
 
-// Mobile drawer only - it lists these as plain links (no room for a nested
-// flyout there), so "Collections" just goes to the /collections overview.
-// Desktop gets the dropdown version, CollectionsNavItem, below.
+// Mobile drawer links. "Collections" is rendered separately as an
+// expandable accordion (see MobileCollectionsNav) so tablet/phone users
+// can reach individual collections without a desktop-style hover flyout.
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Summer Luxe", href: "/summer-luxe" },
-  { label: "Collections", href: "/collections" },
   { label: "Our Story", href: "/our-story" },
 ];
+
+function MobileCollectionsNav({ onNavigate }) {
+  const [open, setOpen] = useState(false);
+  const { categories } = useCategories();
+
+  return (
+    <div className="border-b border-sand-dark/60">
+      <div className="flex items-center">
+        <Link
+          to="/collections"
+          onClick={onNavigate}
+          className="flex-1 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+        >
+          Collections
+        </Link>
+        <button
+          type="button"
+          aria-label={open ? "Collapse collections" : "Expand collections"}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="p-3 text-charcoal"
+        >
+          <ChevronDownIcon
+            width="16"
+            height="16"
+            className={open ? "rotate-180" : ""}
+          />
+        </button>
+      </div>
+      {open && (
+        <div className="pb-2">
+          {categories.map((cat) => (
+            <Link
+              key={cat.vstitch_category_id}
+              to={`/collections/${cat.vstitch_category_id}`}
+              onClick={onNavigate}
+              className="block py-2.5 pl-4 font-sans text-[13px] tracking-[0.1em] text-charcoal/80 uppercase"
+            >
+              {withBrandPrefix(cat.category_name)}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CollectionsNavItem() {
   const [open, setOpen] = useState(false);
@@ -233,14 +278,18 @@ export default function Navbar() {
           </div>
           <nav className="flex flex-col gap-1 px-5 py-6">
             {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
-              >
-                {link.label}
-              </Link>
+              <Fragment key={link.label}>
+                <Link
+                  to={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="border-b border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+                >
+                  {link.label}
+                </Link>
+                {link.label === "Summer Luxe" && (
+                  <MobileCollectionsNav onNavigate={() => setMobileOpen(false)} />
+                )}
+              </Fragment>
             ))}
             {isAuthenticated ? (
               <>
