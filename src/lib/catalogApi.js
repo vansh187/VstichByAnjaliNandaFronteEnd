@@ -49,6 +49,32 @@ export function getBestSellers({ limit = 10 } = {}) {
   return get("/best-sellers", { limit });
 }
 
+// Seasonal/curated collections. The list endpoint is a plain array (no
+// pagination) and takes an optional `season` filter (SUMMER, WINTER, …);
+// omit it for every collection. Used for the "Shop by Season" nav, which
+// mounts on every page — cache the unfiltered list per session the same way
+// categories are cached. Filtered calls always hit the network.
+let collectionsPromise = null;
+
+export function getCollections({ season, force = false } = {}) {
+  if (season) return get("/collections", { season });
+  if (force || !collectionsPromise) {
+    collectionsPromise = get("/collections").catch((err) => {
+      collectionsPromise = null; // allow retry on next call
+      throw err;
+    });
+  }
+  return collectionsPromise;
+}
+
+// A single collection by slug, with its first page of curated products.
+// The `products` field is a keyset-paginated envelope identical in shape to
+// GET /products — pass `afterId` = the previous page's `next_cursor` to
+// append the next page. A 404 here means an unknown or inactive slug.
+export function getCollection(slug, { afterId, limit = 50 } = {}) {
+  return get(`/collections/${slug}`, { after_id: afterId, limit });
+}
+
 export function createOrder(payload, token) {
   return post("/orders", payload, token);
 }
