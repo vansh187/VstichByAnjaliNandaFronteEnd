@@ -5,18 +5,122 @@ import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
 import { useOverlay } from "../hooks/useOverlay";
 import { useCategories } from "../hooks/useCategories";
+import { useCollections } from "../hooks/useCollections";
 import AccountMenu from "./AccountMenu";
 import { BagIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
 
-// Mobile drawer links. "Collections" is rendered separately as an
-// expandable accordion (see MobileCollectionsNav) so tablet/phone users
-// can reach individual collections without a desktop-style hover flyout.
+// Mobile drawer links. "Shop by Season" and "Collections" are rendered
+// separately as expandable accordions (see MobileSeasonsNav /
+// MobileCollectionsNav) so tablet/phone users can reach individual
+// seasonal edits and collections without a desktop-style hover flyout.
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Summer Luxe", href: "/summer-luxe" },
   { label: "Our Story", href: "/our-story" },
 ];
+
+// Only the Summer Luxe edit has a dedicated route today; other seasonal
+// collections returned by the API fall back to this until routed.
+const FALLBACK_SEASON_SLUG = "summer-luxe";
+
+function seasonHref(slug) {
+  return slug === FALLBACK_SEASON_SLUG ? "/summer-luxe" : `/${slug}`;
+}
+
+function MobileSeasonsNav({ onNavigate }) {
+  const [open, setOpen] = useState(false);
+  const { collections } = useCollections();
+
+  return (
+    <div className="border-b border-sand-dark/60">
+      <div className="flex items-center">
+        <Link
+          to="/summer-luxe"
+          onClick={onNavigate}
+          className="flex-1 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+        >
+          Shop by Season
+        </Link>
+        <button
+          type="button"
+          aria-label={open ? "Collapse seasons" : "Expand seasons"}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="p-3 text-charcoal"
+        >
+          <ChevronDownIcon width="16" height="16" className={open ? "rotate-180" : ""} />
+        </button>
+      </div>
+      {open && collections.length > 0 && (
+        <div className="pb-2">
+          {collections.map((col) => (
+            <Link
+              key={col.vstitch_collection_id}
+              to={seasonHref(col.slug)}
+              onClick={onNavigate}
+              className="block py-2.5 pl-4 font-sans text-[13px] tracking-[0.1em] text-charcoal/80 uppercase"
+            >
+              {col.collection_name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SeasonsNavItem() {
+  const [open, setOpen] = useState(false);
+  const { collections } = useCollections();
+
+  // Nothing loaded yet (first paint, or a fetch error) — degrade to a plain
+  // link to the one seasonal page that always exists so the nav never breaks.
+  if (collections.length === 0) {
+    return (
+      <Link
+        to="/summer-luxe"
+        className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+      >
+        Shop by Season
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Link
+        to={seasonHref(collections[0].slug)}
+        aria-expanded={open}
+        className="link-underline flex items-center gap-1 font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+      >
+        Shop by Season
+        <ChevronDownIcon width="14" height="14" className={open ? "rotate-180" : ""} />
+      </Link>
+      {open && (
+        // pt-4 on this wrapper (not mt-4 on the panel) keeps the trigger→panel
+        // gap inside this element's hover area — see CollectionsNavItem.
+        <div className="absolute left-0 top-full z-30 w-60 pt-4">
+          <div className="border border-sand-dark bg-cream py-2 shadow-xl">
+            {collections.map((col) => (
+              <Link
+                key={col.vstitch_collection_id}
+                to={seasonHref(col.slug)}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2.5 text-sm text-charcoal hover:bg-sand/60"
+              >
+                {col.collection_name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MobileCollectionsNav({ onNavigate }) {
   const [open, setOpen] = useState(false);
@@ -181,12 +285,7 @@ export default function Navbar() {
           >
             Home
           </Link>
-          <Link
-            to="/summer-luxe"
-            className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
-          >
-            Summer Luxe
-          </Link>
+          <SeasonsNavItem />
           <CollectionsNavItem />
           <Link
             to="/our-story"
@@ -292,8 +391,11 @@ export default function Navbar() {
                 >
                   {link.label}
                 </Link>
-                {link.label === "Summer Luxe" && (
-                  <MobileCollectionsNav onNavigate={() => setMobileOpen(false)} />
+                {link.label === "Home" && (
+                  <>
+                    <MobileSeasonsNav onNavigate={() => setMobileOpen(false)} />
+                    <MobileCollectionsNav onNavigate={() => setMobileOpen(false)} />
+                  </>
                 )}
               </Fragment>
             ))}
