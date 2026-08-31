@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
@@ -251,7 +252,12 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* mobile drawer */}
+      {/* Mobile drawer - portalled to <body> so it escapes the sticky
+          header's stacking context. Left inside <header> it renders as a
+          z-50 child of a z-40 sticky context, so the header bar and the
+          AnnouncementBar above it punch a bright, un-dimmed hole through
+          the top of the backdrop scrim (visible on phone + tablet). */}
+      {createPortal(
       <div
         className={`fixed inset-0 z-50 transition-opacity duration-300 lg:hidden ${
           mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
@@ -262,11 +268,11 @@ export default function Navbar() {
         <button
           type="button"
           aria-label="Close menu"
-          className="absolute inset-0 bg-ink/50"
+          className="absolute inset-0 bg-ink/70"
           onClick={() => setMobileOpen(false)}
         />
         <div
-          className={`absolute left-0 top-0 h-full w-[82%] max-w-xs bg-cream shadow-2xl transition-transform duration-300 ${
+          className={`absolute left-0 top-0 h-full w-[86%] max-w-sm bg-cream shadow-2xl transition-transform duration-300 ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -323,7 +329,9 @@ export default function Navbar() {
             )}
           </nav>
         </div>
-      </div>
+      </div>,
+        document.body,
+      )}
     </header>
   );
 }
