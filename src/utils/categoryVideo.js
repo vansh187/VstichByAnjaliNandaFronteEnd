@@ -12,6 +12,20 @@
 // decodes, and mobile plays the same encode as desktop.
 const CATEGORY_MEDIA = [
   {
+    keywords: ["dress"],
+    src: "/static/dresses/dresses-hero.mp4",
+    mobileSrc: null,
+    poster: null,
+    tagline: "Draped in light, made to be remembered.",
+  },
+  {
+    keywords: ["summer luxe", "summer-luxe"],
+    src: "/static/dresses/dresses-hero.mp4",
+    mobileSrc: null,
+    poster: null,
+    tagline: "Lightweight luxury for the warm months.",
+  },
+  {
     keywords: ["co-ord skirt", "coord skirt", "skirt set"],
     src: "/static/cord-skirt-set/cord-skirt-set-hero.mp4",
     mobileSrc: null,
