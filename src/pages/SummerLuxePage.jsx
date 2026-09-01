@@ -7,16 +7,19 @@ import StateNotice from "../components/StateNotice";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
 import { ChevronRightIcon } from "../components/Icons";
+import CollectionHeroVideo from "../components/CollectionHeroVideo";
 import { useReveal } from "../hooks/useReveal";
 import { useSeo } from "../hooks/useSeo";
 import { useCollection } from "../hooks/useCollection";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 
 const SLUG = "summer-luxe";
+const HERO_VIDEO = "/static/dresses/dresses-hero.mp4";
 
 export default function SummerLuxePage() {
   const revealRef = useReveal();
   const navigate = useNavigate();
+  const [videoFailed, setVideoFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
   const {
@@ -106,7 +109,13 @@ export default function SummerLuxePage() {
         {!loading && !notFound && !error && collection && (
           <>
             <section className="relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
-              {heroImage && !imageFailed ? (
+              {!videoFailed ? (
+                <CollectionHeroVideo
+                  src={HERO_VIDEO}
+                  onError={() => setVideoFailed(true)}
+                  className="absolute inset-0 h-full w-full object-cover opacity-80"
+                />
+              ) : heroImage && !imageFailed ? (
                 <img
                   src={heroImage}
                   alt={title}
