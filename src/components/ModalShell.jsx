@@ -5,7 +5,14 @@ import { CloseIcon } from "./Icons";
 // (ReturnReplaceModal, SizeGuideModal, CustomizationModal, ...) so the
 // overlay behavior (Escape/backdrop-click/close-button, scroll lock,
 // blocking close mid-submit) only needs to be gotten right in one place.
-export default function ModalShell({ title, onClose, closeDisabled = false, children }) {
+export default function ModalShell({
+  title,
+  onClose,
+  closeDisabled = false,
+  panelClassName = "",
+  contentClassName = "max-h-[75vh] overflow-y-auto px-6 py-6",
+  children,
+}) {
   const guardedClose = () => {
     if (closeDisabled) return;
     onClose();
@@ -19,7 +26,7 @@ export default function ModalShell({ title, onClose, closeDisabled = false, chil
       onClick={guardedClose}
     >
       <div
-        className="w-full max-w-lg border border-sand-dark bg-cream shadow-2xl"
+        className={`w-full max-w-lg border border-sand-dark bg-cream shadow-2xl ${panelClassName}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-sand-dark px-6 py-5">
@@ -35,7 +42,7 @@ export default function ModalShell({ title, onClose, closeDisabled = false, chil
           </button>
         </div>
 
-        <div className="max-h-[75vh] overflow-y-auto px-6 py-6">{children}</div>
+        <div className={contentClassName}>{children}</div>
       </div>
     </div>
   );

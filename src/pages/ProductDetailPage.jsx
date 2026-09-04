@@ -7,6 +7,7 @@ import StateNotice from "../components/StateNotice";
 import Swatch from "../components/Swatch";
 import SizeGuideModal from "../components/SizeGuideModal";
 import CustomizationModal from "../components/CustomizationModal";
+import WishlistButton from "../components/WishlistButton";
 import {
   BagIcon,
   ChevronLeftIcon,
@@ -641,6 +642,21 @@ export default function ProductDetailPage() {
                     Buy Now
                   </button>
                 </div>
+
+                <WishlistButton
+                  product={{
+                    ...detail,
+                    productId: detail.vstitch_product_id,
+                    name: detail.product_name,
+                    categoryName: detail.category_name,
+                    image: activeImage?.image_url ?? null,
+                    price: selectedVariant?.price ?? null,
+                    priceLabel,
+                    inStock,
+                  }}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-sand-dark py-3 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:border-ink hover:bg-sand/50"
+                  label="Save to Wishlist"
+                />
 
                 <div className="mt-14 border-t border-sand-dark/70 pt-8">
                   <h2 className="font-display text-xl text-ink">Customer Reviews</h2>
