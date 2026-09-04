@@ -10,6 +10,7 @@ import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
+import WishlistPage from "./pages/WishlistPage";
 import StoryPage from "./pages/StoryPage";
 import FaqPage from "./pages/FaqPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -70,6 +71,7 @@ function App() {
           path="/product/:productId"
           element={<ProductDetailPage key={location.pathname} />}
         />
+        <Route path="/wishlist" element={<WishlistPage />} />
         {/* keyed by search string so a new query while already on this page
             remounts into a clean useProducts state, same reasoning as
             CollectionPage above */}

@@ -8,6 +8,7 @@ import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
 import Swatch from "./Swatch";
 import { BagIcon, CheckCircleIcon } from "./Icons";
+import WishlistButton from "./WishlistButton";
 
 export default function ProductCard({ product, transitionDelay = 0 }) {
   const { addItem } = useCart();
@@ -129,6 +130,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
 
   return (
     <article data-reveal className="reveal" style={{ transitionDelay: `${transitionDelay}ms` }}>
+      <div className="relative">
       <Link
         to={`/product/${product.vstitch_product_id}`}
         className="relative block aspect-[5/6] overflow-hidden"
@@ -154,6 +156,20 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           </span>
         )}
       </Link>
+        <WishlistButton
+          product={{
+            ...product,
+            productId: product.vstitch_product_id,
+            name: product.product_name,
+            categoryName: product.category_name,
+            image: product.primary_image_url,
+            price: product.min_price,
+            priceLabel,
+          }}
+          label=""
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-cream/90 text-ink shadow-md transition-colors hover:bg-ink hover:text-cream"
+        />
+      </div>
 
       <div className="mt-2 space-y-1.5">
         <p className="text-[9px] tracking-[0.14em] text-charcoal/60 uppercase">

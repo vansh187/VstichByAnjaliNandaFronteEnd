@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../hooks/useCart";
+import { useWishlist } from "../hooks/useWishlist";
 import { useOverlay } from "../hooks/useOverlay";
 import { useCategories } from "../hooks/useCategories";
 import { useCollections } from "../hooks/useCollections";
 import AccountMenu from "./AccountMenu";
-import { BagIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon } from "./Icons";
+import { BagIcon, ChevronDownIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon } from "./Icons";
 import { withBrandPrefix } from "../utils/categoryVideo";
 
 // Mobile drawer links. "Shop by Season" and "Collections" are rendered
@@ -221,6 +222,7 @@ function CollectionsNavItem() {
 export default function Navbar() {
   const { isAuthenticated, logout } = useAuth();
   const { count, openCart } = useCart();
+  const { totalSaved } = useWishlist();
   const location = useLocation();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
@@ -305,6 +307,18 @@ export default function Navbar() {
             <SearchIcon />
           </button>
           <AccountMenu />
+          <Link
+            to="/wishlist"
+            aria-label={`Open wishlist, ${totalSaved} saved items`}
+            className="relative transition-colors hover:text-gold"
+          >
+            <HeartIcon filled={totalSaved > 0} />
+            {totalSaved > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-gold text-[10px] font-medium text-cream">
+                {totalSaved}
+              </span>
+            )}
+          </Link>
           <button
             type="button"
             aria-label={`Open cart, ${count} items`}
@@ -429,6 +443,13 @@ export default function Navbar() {
                 Log In
               </Link>
             )}
+            <Link
+              to="/wishlist"
+              onClick={() => setMobileOpen(false)}
+              className="border-t border-sand-dark/60 py-3 font-sans text-sm font-medium tracking-[0.12em] text-charcoal uppercase"
+            >
+              Wishlist
+            </Link>
           </nav>
         </div>
       </div>,
