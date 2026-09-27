@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
+import { useBackToClose } from "../hooks/useBackToClose";
 import { whatsappHref } from "../utils/contact";
 import { inputClass } from "../utils/inputClass";
 import { CHAR_FILTERS, PATTERNS, sanitizeChars } from "../utils/validation";
@@ -53,7 +54,12 @@ function canShareFile(file) {
   }
 }
 
-function buildMessage({ productName, productId, color, priceLabel, imageUrl }, values, hasDesign) {
+function buildMessage({ productName, productId, color, priceLabel, imageUrl }, rawValues, hasDesign) {
+  // Collapse runs of spaces left behind by the live character filters
+  // (e.g. "Vansh 123 Duggal" -> "Vansh  Duggal"); notes keep their newlines.
+  const values = Object.fromEntries(
+    Object.entries(rawValues).map(([k, v]) => [k, k === "notes" ? v : v.replace(/\s+/g, " ")]),
+  );
   const lines = [
     "Hi VStitch by Anjali Nanda!",
     "I'd like to get a customized dress made with this fabric.",
@@ -86,6 +92,9 @@ export default function FabricCustomizationModal({ productId, productName, color
   const [sent, setSent] = useState(false);
   const [shareError, setShareError] = useState("");
   const [designShared, setDesignShared] = useState(false);
+
+  // Phone Back closes this modal rather than leaving the product page.
+  useBackToClose(onClose);
 
   const designPreview = useMemo(() => (design ? URL.createObjectURL(design) : null), [design]);
   useEffect(() => () => designPreview && URL.revokeObjectURL(designPreview), [designPreview]);
