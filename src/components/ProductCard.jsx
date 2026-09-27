@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { getProductDetail } from "../lib/catalogApi";
-import { formatINR, withPriceUnit } from "../utils/format";
+import { formatINR, isFabricCategory, withPriceUnit } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
 import Swatch from "./Swatch";
-import { BagIcon, CheckCircleIcon } from "./Icons";
+import { BagIcon, CheckCircleIcon, WhatsappGlyphIcon } from "./Icons";
+import FabricCustomizationModal from "./FabricCustomizationModal";
 import WishlistButton from "./WishlistButton";
 
 export default function ProductCard({ product, transitionDelay = 0 }) {
@@ -22,6 +24,9 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
   // computed at render time rather than synced via an effect.
   const [manualSize, setManualSize] = useState(null);
   const [added, setAdded] = useState(false);
+  const [fabricCustomizeOpen, setFabricCustomizeOpen] = useState(false);
+  // Fabrics go to a WhatsApp customization request instead of the cart.
+  const isFabric = isFabricCategory(product.category_name);
 
   // The backend is on a tier that cold-starts (~30-60s to wake), so this
   // first request usually fails on a cold page load. We don't want the
@@ -37,7 +42,8 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
 
   const fetchDetail = useCallback(
     (force = false) => {
-      if (!product.in_stock) return Promise.resolve();
+      // Fabric cards have no size picker, so they never need variant detail.
+      if (!product.in_stock || isFabric) return Promise.resolve();
       return getProductDetail(product.vstitch_product_id, { force })
         .then((data) => {
           setDetail(data);
@@ -53,7 +59,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           }
         });
     },
-    [product.vstitch_product_id, product.in_stock],
+    [product.vstitch_product_id, product.in_stock, isFabric],
   );
 
   useEffect(() => {
@@ -205,7 +211,18 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           </div>
         )}
 
-        {product.in_stock && (
+        {isFabric && (
+          <button
+            type="button"
+            onClick={() => setFabricCustomizeOpen(true)}
+            className="flex w-full items-center justify-center gap-2 bg-ink py-1.5 text-[10px] font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
+          >
+            <WhatsappGlyphIcon width="14" height="14" />
+            Request Customization
+          </button>
+        )}
+
+        {!isFabric && product.in_stock && (
           <select
             value={selectedSize}
             onChange={(e) => setManualSize(e.target.value)}
@@ -230,7 +247,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           </select>
         )}
 
-        {detailError && (
+        {!isFabric && detailError && (
           <button
             type="button"
             onClick={retryDetail}
@@ -240,6 +257,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           </button>
         )}
 
+        {!isFabric && (
         <button
           type="button"
           onClick={handleAdd}
@@ -253,7 +271,21 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           {added ? <CheckCircleIcon width="14" height="14" /> : <BagIcon width="14" height="14" />}
           {buttonLabel}
         </button>
+        )}
       </div>
+
+      {/* Portaled: the card's reveal transform would otherwise trap the fixed overlay inside the card. */}
+      {fabricCustomizeOpen && createPortal(
+        <FabricCustomizationModal
+          productId={product.vstitch_product_id}
+          productName={product.product_name}
+          color={selectedColor}
+          priceLabel={priceLabel}
+          imageUrl={product.primary_image_url ?? null}
+          onClose={() => setFabricCustomizeOpen(false)}
+        />,
+        document.body,
+      )}
     </article>
   );
 }

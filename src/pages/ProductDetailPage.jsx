@@ -7,6 +7,7 @@ import StateNotice from "../components/StateNotice";
 import Swatch from "../components/Swatch";
 import SizeGuideModal from "../components/SizeGuideModal";
 import CustomizationModal from "../components/CustomizationModal";
+import FabricCustomizationModal from "../components/FabricCustomizationModal";
 import WishlistButton from "../components/WishlistButton";
 import {
   BagIcon,
@@ -16,6 +17,7 @@ import {
   CloseIcon,
   MinusIcon,
   PlusIcon,
+  WhatsappGlyphIcon,
 } from "../components/Icons";
 import { useCart } from "../hooks/useCart";
 import { useAuth } from "../hooks/useAuth";
@@ -24,7 +26,7 @@ import { useSwipe } from "../hooks/useSwipe";
 import { useSeo } from "../hooks/useSeo";
 import { getProductDetail } from "../lib/catalogApi";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
-import { formatINR, withPriceUnit } from "../utils/format";
+import { formatINR, isFabricCategory, withPriceUnit } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
@@ -87,6 +89,7 @@ export default function ProductDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [fabricCustomizeOpen, setFabricCustomizeOpen] = useState(false);
   // variantId -> { values, result } for any custom-fit request already
   // submitted this session (rehydrated from localStorage on load).
   const [customRequests, setCustomRequests] = useState(() => readCustomFitStore());
@@ -100,6 +103,9 @@ export default function ProductDetailPage() {
   }, []);
 
   const validId = Number.isFinite(productId) && productId > 0;
+  // Fabrics are sold for custom dresses, not through the cart - they swap the
+  // size/quantity/Add to Cart controls for a WhatsApp customization request.
+  const isFabric = isFabricCategory(detail?.category_name);
 
   const closeLightbox = () => setLightboxOpen(false);
   useOverlay(lightboxOpen, closeLightbox);
@@ -542,7 +548,24 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {inStock && (
+                {isFabric && (
+                  <div className="mt-8">
+                    <p className="max-w-lg text-sm leading-relaxed text-charcoal/75">
+                      Our fabrics are made to be stitched into your own custom dress. Share what you'd like
+                      made - or upload your design - and we'll send you a quote on WhatsApp.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFabricCustomizeOpen(true)}
+                      className="mt-4 flex w-full items-center justify-center gap-2 bg-ink py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
+                    >
+                      <WhatsappGlyphIcon width="18" height="18" />
+                      Request Customization
+                    </button>
+                  </div>
+                )}
+
+                {!isFabric && inStock && (
                   <div className="mt-6">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">Size</p>
@@ -595,7 +618,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {canOrder && (
+                {!isFabric && canOrder && (
                   <div className="mt-6">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-charcoal/60">Quantity</p>
                     <div className="mt-2 flex w-fit items-center border border-sand-dark">
@@ -622,6 +645,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
+                {!isFabric && (
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <button
                     type="button"
@@ -645,6 +669,7 @@ export default function ProductDetailPage() {
                     Buy Now
                   </button>
                 </div>
+                )}
 
                 <WishlistButton
                   product={{
@@ -754,6 +779,20 @@ export default function ProductDetailPage() {
       )}
 
       {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} />}
+      {fabricCustomizeOpen && detail && (
+        <FabricCustomizationModal
+          productId={detail.vstitch_product_id}
+          productName={detail.product_name}
+          color={effectiveColor}
+          priceLabel={
+            selectedVariant
+              ? withPriceUnit(formatINR(selectedVariant.price), detail.category_name)
+              : priceLabel
+          }
+          imageUrl={activeImage?.image_url ?? null}
+          onClose={() => setFabricCustomizeOpen(false)}
+        />
+      )}
       {customizeOpen && detail && selectedVariant && (
         <CustomizationModal
           productId={detail.vstitch_product_id}
