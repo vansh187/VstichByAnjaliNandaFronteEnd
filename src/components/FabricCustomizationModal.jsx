@@ -152,10 +152,14 @@ export default function FabricCustomizationModal({ productId, productName, color
     const href = whatsappHref(
       buildMessage({ productName, productId, color, priceLabel, imageUrl }, values, Boolean(design)),
     );
-    // Opened synchronously inside the click so popup blockers allow it;
-    // in-app browsers that refuse new windows fall back to navigating.
-    const win = window.open(href, "_blank", "noopener,noreferrer");
-    if (!win) window.location.href = href;
+    // Opened synchronously inside the click so popup blockers allow it.
+    // No "noopener" feature here: with it, window.open always returns null,
+    // so the fallback below would also navigate this tab away. The opener
+    // link is cut manually instead. Only when the popup is actually blocked
+    // (e.g. some in-app browsers) does this tab navigate to WhatsApp.
+    const win = window.open(href, "_blank");
+    if (win) win.opener = null;
+    else window.location.href = href;
     setSent(true);
   };
 
