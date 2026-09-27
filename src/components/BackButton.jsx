@@ -11,22 +11,36 @@ export default function BackButton() {
   const navigationType = useNavigationType();
   const overlayOpen = useAnyOverlayOpen();
 
-  // Tracks in-app navigation depth ourselves via the public useNavigationType
-  // API instead of reading window.history.state.idx, which is an undocumented
-  // internal field of react-router's history implementation and not a stable
-  // contract to depend on. PUSH deepens the stack, POP (back/forward) backs
-  // out of it, REPLACE (e.g. redirects) leaves depth unchanged; it never goes
-  // below 0, which is also true on the very first page load.
-  const depthRef = useRef(0);
+  // Tracks in-app history ourselves via the public useNavigationType API and
+  // location.key instead of reading window.history.state.idx, which is an
+  // undocumented internal field of react-router's history implementation and
+  // not a stable contract to depend on. Keeps the list of entry keys seen and
+  // where we are in it: PUSH drops any forward entries and appends, REPLACE
+  // swaps the current key, and POP looks the key up - so Back *and* Forward
+  // both land on the right index (a plain depth counter can't tell them
+  // apart). An unknown key on POP (first load, or history from before a
+  // reload) restarts the list there, so the button never offers a Back
+  // that would leave the app.
+  const historyRef = useRef({ keys: [], index: -1 });
   const [canGoBack, setCanGoBack] = useState(false);
 
   useEffect(() => {
+    const h = historyRef.current;
     if (navigationType === "PUSH") {
-      depthRef.current += 1;
-    } else if (navigationType === "POP" && depthRef.current > 0) {
-      depthRef.current -= 1;
+      h.keys = [...h.keys.slice(0, h.index + 1), location.key];
+      h.index = h.keys.length - 1;
+    } else if (navigationType === "REPLACE" && h.index >= 0) {
+      h.keys[h.index] = location.key;
+    } else {
+      const i = h.keys.indexOf(location.key);
+      if (i >= 0) {
+        h.index = i;
+      } else {
+        h.keys = [location.key];
+        h.index = 0;
+      }
     }
-    setCanGoBack(depthRef.current > 0);
+    setCanGoBack(h.index > 0);
   }, [location, navigationType]);
 
   if (!canGoBack || overlayOpen) return null;

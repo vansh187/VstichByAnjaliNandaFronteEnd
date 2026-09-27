@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
-import { useBackToClose } from "../hooks/useBackToClose";
 import { whatsappHref } from "../utils/contact";
 import { inputClass } from "../utils/inputClass";
 import { CHAR_FILTERS, PATTERNS, sanitizeChars } from "../utils/validation";
@@ -92,9 +91,6 @@ export default function FabricCustomizationModal({ productId, productName, color
   const [sent, setSent] = useState(false);
   const [shareError, setShareError] = useState("");
   const [designShared, setDesignShared] = useState(false);
-
-  // Phone Back closes this modal rather than leaving the product page.
-  useBackToClose(onClose);
 
   const designPreview = useMemo(() => (design ? URL.createObjectURL(design) : null), [design]);
   useEffect(() => () => designPreview && URL.revokeObjectURL(designPreview), [designPreview]);

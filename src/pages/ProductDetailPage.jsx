@@ -20,6 +20,7 @@ import {
   WhatsappGlyphIcon,
 } from "../components/Icons";
 import { useCart } from "../hooks/useCart";
+import { useHistoryModal } from "../hooks/useHistoryModal";
 import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
 import { useSwipe } from "../hooks/useSwipe";
@@ -89,7 +90,9 @@ export default function ProductDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [fabricCustomizeOpen, setFabricCustomizeOpen] = useState(false);
+  // In router history so phone Back closes it (see useHistoryModal).
+  const [fabricCustomizeOpen, openFabricCustomize, closeFabricCustomize] =
+    useHistoryModal("fabric-customize");
   // variantId -> { values, result } for any custom-fit request already
   // submitted this session (rehydrated from localStorage on load).
   const [customRequests, setCustomRequests] = useState(() => readCustomFitStore());
@@ -556,7 +559,7 @@ export default function ProductDetailPage() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setFabricCustomizeOpen(true)}
+                      onClick={openFabricCustomize}
                       className="mt-4 flex w-full items-center justify-center gap-2 bg-ink py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
                     >
                       <WhatsappGlyphIcon width="18" height="18" />
@@ -790,7 +793,7 @@ export default function ProductDetailPage() {
               : priceLabel
           }
           imageUrl={activeImage?.image_url ?? null}
-          onClose={() => setFabricCustomizeOpen(false)}
+          onClose={closeFabricCustomize}
         />
       )}
       {customizeOpen && detail && selectedVariant && (
