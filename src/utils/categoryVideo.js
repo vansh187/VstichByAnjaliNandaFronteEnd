@@ -12,6 +12,13 @@
 // decodes, and mobile plays the same encode as desktop.
 const CATEGORY_MEDIA = [
   {
+    keywords: ["fabric"],
+    src: "/static/fabrics/fabrics-hero.mp4",
+    mobileSrc: null,
+    poster: null,
+    tagline: "Textures that move, colours that stay.",
+  },
+  {
     keywords: ["dress"],
     src: "/static/dresses/dresses-hero.mp4",
     mobileSrc: null,

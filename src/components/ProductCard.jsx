@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { getProductDetail } from "../lib/catalogApi";
-import { formatINR } from "../utils/format";
+import { formatINR, withPriceUnit } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
@@ -101,10 +101,12 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
   const selectedVariant = variantsForColor.find((v) => v.size === selectedSize) ?? null;
   const canAddToCart = product.in_stock && selectedVariant && selectedVariant.stock_quantity > 0;
 
-  const priceLabel =
+  const priceLabel = withPriceUnit(
     product.min_price === product.max_price
       ? formatINR(product.min_price)
-      : `From ${formatINR(product.min_price)}`;
+      : `From ${formatINR(product.min_price)}`,
+    product.category_name,
+  );
 
   const handleAdd = () => {
     if (!canAddToCart) return;

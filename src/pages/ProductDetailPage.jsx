@@ -24,7 +24,7 @@ import { useSwipe } from "../hooks/useSwipe";
 import { useSeo } from "../hooks/useSeo";
 import { getProductDetail } from "../lib/catalogApi";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
-import { formatINR } from "../utils/format";
+import { formatINR, withPriceUnit } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
@@ -196,8 +196,11 @@ export default function ProductDetailPage() {
     const prices = variantsForPiece.map((v) => v.price);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
-    return min === max ? formatINR(min) : `${formatINR(min)} – ${formatINR(max)}`;
-  }, [variantsForPiece]);
+    return withPriceUnit(
+      min === max ? formatINR(min) : `${formatINR(min)} – ${formatINR(max)}`,
+      detail?.category_name,
+    );
+  }, [variantsForPiece, detail?.category_name]);
 
   // Truncated to ~155 chars, the practical length before Google starts
   // clipping a meta description in search results.

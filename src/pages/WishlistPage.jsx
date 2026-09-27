@@ -7,11 +7,16 @@ import StateNotice from "../components/StateNotice";
 import { CheckCircleIcon, ChevronRightIcon, FolderIcon, PlusIcon, TrashIcon } from "../components/Icons";
 import { useWishlist } from "../hooks/useWishlist";
 import { useSeo } from "../hooks/useSeo";
-import { formatINR } from "../utils/format";
+import { formatINR, withPriceUnit } from "../utils/format";
 
 function WishlistProduct({ product, collectionId, onRemove }) {
   const [imgError, setImgError] = useState(false);
-  const price = product.priceLabel || (product.price ? formatINR(product.price) : "");
+  // Recomputed from categoryName so items saved before the "per metre" label
+  // existed pick it up too.
+  const price = withPriceUnit(
+    product.priceLabel || (product.price ? formatINR(product.price) : ""),
+    product.categoryName,
+  );
 
   return (
     <article className="grid grid-cols-[88px_1fr] gap-4 border-b border-sand-dark/70 py-4 last:border-b-0">
