@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
+import { useHistoryModal } from "../hooks/useHistoryModal";
 import { getProductDetail } from "../lib/catalogApi";
 import { formatINR, isFabricCategory, withPriceUnit } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
@@ -24,7 +25,10 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
   // computed at render time rather than synced via an effect.
   const [manualSize, setManualSize] = useState(null);
   const [added, setAdded] = useState(false);
-  const [fabricCustomizeOpen, setFabricCustomizeOpen] = useState(false);
+  // In router history so phone Back closes it (see useHistoryModal).
+  const [fabricCustomizeOpen, openFabricCustomize, closeFabricCustomize] = useHistoryModal(
+    `fabric-customize-${product.vstitch_product_id}`,
+  );
   // Fabrics go to a WhatsApp customization request instead of the cart.
   const isFabric = isFabricCategory(product.category_name);
 
@@ -214,7 +218,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
         {isFabric && (
           <button
             type="button"
-            onClick={() => setFabricCustomizeOpen(true)}
+            onClick={openFabricCustomize}
             className="flex w-full items-center justify-center gap-2 bg-ink py-1.5 text-[10px] font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
           >
             <WhatsappGlyphIcon width="14" height="14" />
@@ -282,7 +286,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
           color={selectedColor}
           priceLabel={priceLabel}
           imageUrl={product.primary_image_url ?? null}
-          onClose={() => setFabricCustomizeOpen(false)}
+          onClose={closeFabricCustomize}
         />,
         document.body,
       )}
