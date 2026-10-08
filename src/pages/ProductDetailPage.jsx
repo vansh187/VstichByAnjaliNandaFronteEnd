@@ -358,7 +358,7 @@ export default function ProductDetailPage() {
       <main className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
         {validId && loading && (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-            <div className="aspect-[4/5] animate-pulse rounded-[1.5rem] bg-sand-dark/50" />
+            <div className="aspect-[3/4] w-full max-w-[280px] animate-pulse rounded-[1.5rem] bg-sand-dark/50 sm:max-w-xs" />
             <div className="space-y-4">
               <div className="h-4 w-32 animate-pulse rounded bg-sand-dark/50" />
               <div className="h-9 w-3/4 animate-pulse rounded bg-sand-dark/50" />
@@ -393,7 +393,8 @@ export default function ProductDetailPage() {
 
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
               <div>
-                <div className="group relative aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs">
+                {/* 3:4 + object-contain (garments) so taller photos aren't cropped at the head/hem. */}
+                <div className="group relative aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs">
                   <button
                     type="button"
                     onClick={() => activeImage?.image_url && !imgError && setLightboxOpen(true)}
@@ -407,7 +408,7 @@ export default function ProductDetailPage() {
                         src={activeImage.image_url}
                         alt={`${detail.product_name} — ${detail.category_name}, VStitch by Anjali Nanda`}
                         onError={() => setImgError(true)}
-                        className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
+                        className={`h-full w-full cursor-zoom-in ${isFabric ? "object-cover" : "object-contain"} transition-transform duration-300 hover:scale-105`}
                       />
                     ) : (
                       <Swatch

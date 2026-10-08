@@ -145,7 +145,10 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
       <div className="relative">
       <Link
         to={`/product/${product.vstitch_product_id}`}
-        className="relative block aspect-[5/6] overflow-hidden"
+        // 3:4 matches most catalogue photos (and the card skeleton). Garment
+        // photos are contained so taller shots (e.g. 2:3) aren't cropped at
+        // the head/hem; square fabric swatches still fill the frame.
+        className="relative block aspect-[3/4] overflow-hidden bg-sand/40"
       >
         {product.primary_image_url && !imgError ? (
           <img
@@ -153,7 +156,7 @@ export default function ProductCard({ product, transitionDelay = 0 }) {
             alt={`${product.product_name} — ${product.category_name}, VStitch by Anjali Nanda`}
             loading="lazy"
             onError={() => setImgError(true)}
-            className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-110"
+            className={`h-full w-full ${isFabric ? "object-cover" : "object-contain"} transition-transform duration-700 ease-out hover:scale-110`}
           />
         ) : (
           <Swatch
