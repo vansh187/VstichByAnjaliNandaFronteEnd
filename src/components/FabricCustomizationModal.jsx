@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 import { whatsappHref } from "../utils/contact";
 import { inputClass } from "../utils/inputClass";
+import { CHAR_FILTERS, PATTERNS, sanitizeChars } from "../utils/validation";
 import FormField from "./FormField";
 import ModalShell from "./ModalShell";
 import { CheckCircleIcon, WhatsappGlyphIcon } from "./Icons";
@@ -15,6 +16,35 @@ import { CheckCircleIcon, WhatsappGlyphIcon } from "./Icons";
 // share files (most phones), otherwise by attaching it in the opened chat.
 const MAX_DESIGN_BYTES = 10 * 1024 * 1024;
 
+// Kept short since everything ends up in one WhatsApp message.
+const MAX = { name: 100, phone: 13, dressType: 120, metres: 6, notes: 500 };
+const METRES_MIN = 0.5;
+const METRES_MAX = 100;
+// 10-12 digits with an optional leading +: covers 98765 43210, 098765 43210,
+// 919876543210 and +919876543210 (13 chars max), plus most foreign mobiles.
+const PHONE_PATTERN = /^\+?\d{10,12}$/;
+const METRES_PATTERN = /^\d{1,3}(\.\d{1,2})?$/;
+
+// Strips disallowed characters as the user types, like AuthCard does.
+const sanitizers = {
+  name: (v) => sanitizeChars(v, CHAR_FILTERS.NAME).replace(/^\s+/, ""),
+  // Digits only, with + allowed solely as the first character.
+  // 13 chars with the +, 12 digits without it.
+  phone: (v) => {
+    const clean = sanitizeChars(v, CHAR_FILTERS.PHONE).replace(/(?!^)\+/g, "");
+    return clean.slice(0, clean.startsWith("+") ? 13 : 12);
+  },
+  dressType: (v) => sanitizeChars(v, CHAR_FILTERS.ADDRESS_LINE).replace(/^\s+/, ""),
+  // One decimal point, at most two decimal places.
+  metres: (v) => {
+    const [whole, ...rest] = v.replace(/[^\d.]/g, "").split(".");
+    return rest.length ? `${whole}.${rest.join("").slice(0, 2)}` : whole;
+  },
+  // Free text, minus invisible control characters (newlines are kept).
+  // eslint-disable-next-line no-control-regex
+  notes: (v) => v.replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, ""),
+};
+
 function canShareFile(file) {
   try {
     return Boolean(file && navigator.canShare && navigator.canShare({ files: [file] }));
@@ -23,7 +53,12 @@ function canShareFile(file) {
   }
 }
 
-function buildMessage({ productName, productId, color, priceLabel, imageUrl }, values, hasDesign) {
+function buildMessage({ productName, productId, color, priceLabel, imageUrl }, rawValues, hasDesign) {
+  // Collapse runs of spaces left behind by the live character filters
+  // (e.g. "Vansh 123 Duggal" -> "Vansh  Duggal"); notes keep their newlines.
+  const values = Object.fromEntries(
+    Object.entries(rawValues).map(([k, v]) => [k, k === "notes" ? v : v.replace(/\s+/g, " ")]),
+  );
   const lines = [
     "Hi VStitch by Anjali Nanda!",
     "I'd like to get a customized dress made with this fabric.",
@@ -61,7 +96,8 @@ export default function FabricCustomizationModal({ productId, productName, color
   useEffect(() => () => designPreview && URL.revokeObjectURL(designPreview), [designPreview]);
 
   const setField = (key, value) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
+    const clean = sanitizers[key](value).slice(0, MAX[key]);
+    setValues((prev) => ({ ...prev, [key]: clean }));
     if (fieldErrors[key]) setFieldErrors((prev) => ({ ...prev, [key]: null }));
   };
 
@@ -84,13 +120,30 @@ export default function FabricCustomizationModal({ productId, productName, color
 
   const validate = () => {
     const errors = {};
-    if (!values.name.trim()) errors.name = "Required";
-    else if (values.name.trim().length > 250) errors.name = "Must be 250 characters or fewer";
+    const name = values.name.trim();
+    if (!name) errors.name = "Required";
+    else if (name.length < 2) errors.name = "Enter your full name";
+    else if (name.length > MAX.name) errors.name = `Must be ${MAX.name} characters or fewer`;
+    else if (!PATTERNS.NAME.test(name)) errors.name = "Only letters, spaces, hyphens and apostrophes are allowed";
+
     const phone = values.phone.trim();
-    if (phone && (phone.length < 7 || phone.length > 50)) errors.phone = "Enter a valid phone number";
+    if (phone && !PHONE_PATTERN.test(phone)) {
+      errors.phone = "Enter a 10-digit mobile number, optionally with country code (e.g. +91)";
+    }
+
+    const dressType = values.dressType.trim();
+    if (dressType.length > MAX.dressType) errors.dressType = `Must be ${MAX.dressType} characters or fewer`;
+    else if (dressType && !PATTERNS.ADDRESS_LINE.test(dressType)) errors.dressType = "Contains characters that aren't allowed";
+
     const metres = values.metres.trim();
-    if (metres && !(Number(metres) > 0 && Number(metres) <= 100)) errors.metres = "Enter a value between 0.1 and 100";
-    if (values.notes.length > 500) errors.notes = "Must be 500 characters or fewer";
+    if (metres) {
+      const n = Number(metres);
+      if (!METRES_PATTERN.test(metres) || !(n >= METRES_MIN && n <= METRES_MAX)) {
+        errors.metres = `Enter between ${METRES_MIN} and ${METRES_MAX} metres (up to 2 decimals)`;
+      }
+    }
+
+    if (values.notes.trim().length > MAX.notes) errors.notes = `Must be ${MAX.notes} characters or fewer`;
     return errors;
   };
 
@@ -104,10 +157,14 @@ export default function FabricCustomizationModal({ productId, productName, color
     const href = whatsappHref(
       buildMessage({ productName, productId, color, priceLabel, imageUrl }, values, Boolean(design)),
     );
-    // Opened synchronously inside the click so popup blockers allow it;
-    // in-app browsers that refuse new windows fall back to navigating.
-    const win = window.open(href, "_blank", "noopener,noreferrer");
-    if (!win) window.location.href = href;
+    // Opened synchronously inside the click so popup blockers allow it.
+    // No "noopener" feature here: with it, window.open always returns null,
+    // so the fallback below would also navigate this tab away. The opener
+    // link is cut manually instead. Only when the popup is actually blocked
+    // (e.g. some in-app browsers) does this tab navigate to WhatsApp.
+    const win = window.open(href, "_blank");
+    if (win) win.opener = null;
+    else window.location.href = href;
     setSent(true);
   };
 
@@ -205,6 +262,8 @@ export default function FabricCustomizationModal({ productId, productName, color
             <FormField label="Full Name" required error={fieldErrors.name}>
               <input
                 type="text"
+                autoComplete="name"
+                maxLength={MAX.name}
                 value={values.name}
                 onChange={(e) => setField("name", e.target.value)}
                 className={inputClass(fieldErrors.name)}
@@ -213,6 +272,10 @@ export default function FabricCustomizationModal({ productId, productName, color
             <FormField label="Phone (optional)" error={fieldErrors.phone}>
               <input
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                maxLength={MAX.phone}
+                placeholder="+919876543210"
                 value={values.phone}
                 onChange={(e) => setField("phone", e.target.value)}
                 className={inputClass(fieldErrors.phone)}
@@ -222,7 +285,7 @@ export default function FabricCustomizationModal({ productId, productName, color
               <input
                 type="text"
                 value={values.dressType}
-                maxLength={120}
+                maxLength={MAX.dressType}
                 onChange={(e) => setField("dressType", e.target.value)}
                 placeholder="e.g. Anarkali, gown, co-ord set"
                 className={inputClass(fieldErrors.dressType)}
@@ -230,11 +293,10 @@ export default function FabricCustomizationModal({ productId, productName, color
             </FormField>
             <FormField label="Metres needed (optional)" error={fieldErrors.metres}>
               <input
-                type="number"
-                min="0.1"
-                max="100"
-                step="0.1"
+                // type="text": number inputs accept "e"/"-" and ignore maxLength on mobile.
+                type="text"
                 inputMode="decimal"
+                maxLength={MAX.metres}
                 value={values.metres}
                 onChange={(e) => setField("metres", e.target.value)}
                 placeholder="Not sure? Leave blank"
@@ -274,10 +336,13 @@ export default function FabricCustomizationModal({ productId, productName, color
               value={values.notes}
               onChange={(e) => setField("notes", e.target.value)}
               rows={3}
-              maxLength={500}
+              maxLength={MAX.notes}
               placeholder="Occasion, neckline, sleeves, lining, deadline…"
               className={inputClass(fieldErrors.notes)}
             />
+            <p className="mt-1 text-right text-xs text-charcoal/50">
+              {values.notes.length}/{MAX.notes}
+            </p>
           </FormField>
 
           <button

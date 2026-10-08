@@ -20,6 +20,7 @@ import {
   WhatsappGlyphIcon,
 } from "../components/Icons";
 import { useCart } from "../hooks/useCart";
+import { useHistoryModal } from "../hooks/useHistoryModal";
 import { useAuth } from "../hooks/useAuth";
 import { useOverlay } from "../hooks/useOverlay";
 import { useSwipe } from "../hooks/useSwipe";
@@ -89,7 +90,9 @@ export default function ProductDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [fabricCustomizeOpen, setFabricCustomizeOpen] = useState(false);
+  // In router history so phone Back closes it (see useHistoryModal).
+  const [fabricCustomizeOpen, openFabricCustomize, closeFabricCustomize] =
+    useHistoryModal("fabric-customize");
   // variantId -> { values, result } for any custom-fit request already
   // submitted this session (rehydrated from localStorage on load).
   const [customRequests, setCustomRequests] = useState(() => readCustomFitStore());
@@ -355,7 +358,7 @@ export default function ProductDetailPage() {
       <main className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
         {validId && loading && (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-            <div className="aspect-[4/5] animate-pulse rounded-[1.5rem] bg-sand-dark/50" />
+            <div className="aspect-[3/4] w-full max-w-[280px] animate-pulse rounded-[1.5rem] bg-sand-dark/50 sm:max-w-xs" />
             <div className="space-y-4">
               <div className="h-4 w-32 animate-pulse rounded bg-sand-dark/50" />
               <div className="h-9 w-3/4 animate-pulse rounded bg-sand-dark/50" />
@@ -390,7 +393,8 @@ export default function ProductDetailPage() {
 
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
               <div>
-                <div className="group relative aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs">
+                {/* 3:4 + object-contain (garments) so taller photos aren't cropped at the head/hem. */}
+                <div className="group relative aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-[1.5rem] bg-sand/50 sm:max-w-xs">
                   <button
                     type="button"
                     onClick={() => activeImage?.image_url && !imgError && setLightboxOpen(true)}
@@ -404,7 +408,7 @@ export default function ProductDetailPage() {
                         src={activeImage.image_url}
                         alt={`${detail.product_name} — ${detail.category_name}, VStitch by Anjali Nanda`}
                         onError={() => setImgError(true)}
-                        className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105"
+                        className={`h-full w-full cursor-zoom-in ${isFabric ? "object-cover" : "object-contain"} transition-transform duration-300 hover:scale-105`}
                       />
                     ) : (
                       <Swatch
@@ -556,7 +560,7 @@ export default function ProductDetailPage() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setFabricCustomizeOpen(true)}
+                      onClick={openFabricCustomize}
                       className="mt-4 flex w-full items-center justify-center gap-2 bg-ink py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
                     >
                       <WhatsappGlyphIcon width="18" height="18" />
@@ -790,7 +794,7 @@ export default function ProductDetailPage() {
               : priceLabel
           }
           imageUrl={activeImage?.image_url ?? null}
-          onClose={() => setFabricCustomizeOpen(false)}
+          onClose={closeFabricCustomize}
         />
       )}
       {customizeOpen && detail && selectedVariant && (
