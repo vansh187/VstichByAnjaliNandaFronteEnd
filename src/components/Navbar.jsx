@@ -20,12 +20,10 @@ const navLinks = [
   { label: "Our Story", href: "/our-story" },
 ];
 
-// Only the Summer Luxe edit has a dedicated route today; other seasonal
-// collections returned by the API fall back to this until routed.
-const FALLBACK_SEASON_SLUG = "summer-luxe";
-
+// Every seasonal collection the API returns is served by
+// SeasonalCollectionPage at /:collectionSlug (see App.jsx).
 function seasonHref(slug) {
-  return slug === FALLBACK_SEASON_SLUG ? "/summer-luxe" : `/${slug}`;
+  return `/${slug}`;
 }
 
 function MobileSeasonsNav({ onNavigate }) {

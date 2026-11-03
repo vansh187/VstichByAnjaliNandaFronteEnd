@@ -8,6 +8,8 @@ export const FRONTEND_BASE_URL =
 
 export const STATIC_PAGES = [
   { path: "/", changefreq: "daily", priority: "1.0" },
+  // Kept static so it's still listed if the API is down at build time; every
+  // other seasonal edit (e.g. /festive-luxe) comes from GET /collections.
   { path: "/summer-luxe", changefreq: "weekly", priority: "0.8" },
   { path: "/collections", changefreq: "weekly", priority: "0.8" },
   { path: "/our-story", changefreq: "monthly", priority: "0.5" },
@@ -22,6 +24,17 @@ async function fetchJson(url) {
 
 export function fetchAllCategories() {
   return fetchJson(`${API_BASE_URL}/categories`);
+}
+
+// Seasonal edits served by SeasonalCollectionPage at /:slug. Skips any
+// already in STATIC_PAGES so a route is never listed twice.
+export async function fetchSeasonalCollectionPaths() {
+  const collections = await fetchJson(`${API_BASE_URL}/collections`);
+  const staticPaths = new Set(STATIC_PAGES.map((p) => p.path));
+  return collections
+    .filter((c) => c.slug)
+    .map((c) => `/${c.slug}`)
+    .filter((p) => !staticPaths.has(p));
 }
 
 export async function fetchAllProducts() {
@@ -49,17 +62,25 @@ export async function fetchAllProducts() {
 export async function fetchAllRoutes() {
   let categories = [];
   let products = [];
+  let seasonalPaths = [];
   try {
     [categories, products] = await Promise.all([fetchAllCategories(), fetchAllProducts()]);
   } catch (err) {
     console.warn(`[catalog] Skipping catalog routes - couldn't reach the API (${err.message}).`);
   }
+  try {
+    seasonalPaths = await fetchSeasonalCollectionPaths();
+  } catch (err) {
+    console.warn(`[catalog] Skipping seasonal collection routes (${err.message}).`);
+  }
 
   return {
     categories,
     products,
+    seasonalPaths,
     routes: [
       ...STATIC_PAGES.map((p) => p.path),
+      ...seasonalPaths,
       ...categories.map((c) => `/collections/${c.vstitch_category_id}`),
       ...products.map((p) => `/product/${p.vstitch_product_id}`),
     ],
