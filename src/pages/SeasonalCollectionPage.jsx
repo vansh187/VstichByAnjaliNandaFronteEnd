@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
@@ -12,11 +12,15 @@ import { useReveal } from "../hooks/useReveal";
 import { useSeo } from "../hooks/useSeo";
 import { useCollection } from "../hooks/useCollection";
 import { FRONTEND_BASE_URL } from "../lib/apiConfig";
+import { resolveVideoForCategory } from "../utils/categoryVideo";
 
-const SLUG = "summer-luxe";
-const HERO_VIDEO = "/static/dresses/dresses-hero.mp4";
-
-export default function SummerLuxePage() {
+// One page for every seasonal collection (Summer Luxe, Festive Luxe, ...),
+// served at /:collectionSlug - the same `/${slug}` links the navbar builds
+// from the API, so a collection added on the backend works without a new
+// route. Unknown slugs get the backend's 404 and show "Collection Not Found"
+// instead of a blank page.
+export default function SeasonalCollectionPage() {
+  const { collectionSlug: SLUG } = useParams();
   const revealRef = useReveal();
   const navigate = useNavigate();
   const [videoFailed, setVideoFailed] = useState(false);
@@ -40,11 +44,16 @@ export default function SummerLuxePage() {
     return primary?.image_url;
   }, [collection]);
 
-  const title = collection?.collection_name ?? "Summer Luxe";
+  // "festive-luxe" -> "Festive Luxe" until the collection itself has loaded.
+  const fallbackTitle = SLUG.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  const title = collection?.collection_name ?? fallbackTitle;
   const description =
     collection?.subtitle ||
     collection?.description ||
-    "A hand-picked edit of our airiest, most elegant pieces from VStitch by Anjali Nanda.";
+    "A hand-picked seasonal edit of elegant pieces from VStitch by Anjali Nanda.";
+  // Matched by collection name/slug (see categoryVideo); no match falls back
+  // to the collection's image, then a gradient.
+  const heroVideo = resolveVideoForCategory(`${collection?.collection_name ?? ""} ${SLUG}`);
 
   const breadcrumbJsonLd = useMemo(() => {
     if (!collection) return undefined;
@@ -61,10 +70,10 @@ export default function SummerLuxePage() {
         },
       ],
     };
-  }, [collection, title]);
+  }, [collection, title, SLUG]);
 
   useSeo({
-    title: `${title} | VStitch by Anjali Nanda`,
+    title: `${notFound ? "Collection Not Found" : title} | VStitch by Anjali Nanda`,
     description,
     path: `/${SLUG}`,
     image: heroImage,
@@ -84,7 +93,7 @@ export default function SummerLuxePage() {
           <section className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-5 py-32 text-center sm:px-8">
             <h1 className="font-display text-3xl text-ink">Collection Not Found</h1>
             <p className="text-charcoal/70">
-              The Summer Luxe edit isn't available right now — explore our full collections instead.
+              This edit isn't available right now — explore our full collections instead.
             </p>
             <Link
               to="/collections"
@@ -109,9 +118,9 @@ export default function SummerLuxePage() {
         {!loading && !notFound && !error && collection && (
           <>
             <section className="relative flex h-[92svh] min-h-[600px] items-end overflow-hidden bg-ink text-cream">
-              {!videoFailed ? (
+              {heroVideo && !videoFailed ? (
                 <CollectionHeroVideo
-                  src={HERO_VIDEO}
+                  src={heroVideo}
                   onError={() => setVideoFailed(true)}
                   className="absolute inset-0 h-full w-full object-cover opacity-80"
                 />
@@ -155,7 +164,7 @@ export default function SummerLuxePage() {
               {items.length === 0 ? (
                 <StateNotice
                   title="No pieces in this edit yet"
-                  description="The Summer Luxe collection is being curated — check back soon."
+                  description={`The ${title} collection is being curated — check back soon.`}
                   actionLabel="Browse Collections"
                   onAction={() => navigate("/collections")}
                 />

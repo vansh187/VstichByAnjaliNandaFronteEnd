@@ -5,7 +5,7 @@ import AuthPage from "./pages/AuthPage";
 import AuthModal from "./pages/AuthModal";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import HomePage from "./pages/HomePage";
-import SummerLuxePage from "./pages/SummerLuxePage";
+import SeasonalCollectionPage from "./pages/SeasonalCollectionPage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
@@ -58,7 +58,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/summer-luxe" element={<SummerLuxePage />} />
+        {/* Seasonal edits (/summer-luxe, /festive-luxe, ...) - the navbar links
+            to `/${slug}` for every collection the API returns. React Router
+            ranks the static paths here above this one, so it only catches
+            otherwise-unmatched single-segment URLs; unknown slugs render
+            "Collection Not Found" rather than a blank page. Keyed by path so
+            switching edits remounts into a clean useCollection state. */}
+        <Route
+          path="/:collectionSlug"
+          element={<SeasonalCollectionPage key={location.pathname} />}
+        />
         {/* keyed by path so switching categories remounts the page — a
             clean useProducts/useCategories state (loading, items, cursor)
             rather than trying to reset it mid-effect */}

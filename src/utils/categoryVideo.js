@@ -33,6 +33,14 @@ const CATEGORY_MEDIA = [
     tagline: "Lightweight luxury for the warm months.",
   },
   {
+    // Festive Luxe is an edit of embellished suit sets, so it borrows the suits clip.
+    keywords: ["festive luxe", "festive-luxe"],
+    src: "/static/suits/suits-hero.mp4",
+    mobileSrc: null,
+    poster: null,
+    tagline: "Jewel tones and gold work for every celebration.",
+  },
+  {
     keywords: ["co-ord skirt", "coord skirt", "skirt set"],
     src: "/static/cord-skirt-set/cord-skirt-set-hero.mp4",
     mobileSrc: null,

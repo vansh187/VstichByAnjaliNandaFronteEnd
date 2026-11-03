@@ -17,10 +17,13 @@ function urlEntry(loc, { changefreq, priority } = {}) {
 }
 
 async function main() {
-  const { categories, products } = await fetchAllRoutes();
+  const { categories, products, seasonalPaths } = await fetchAllRoutes();
 
   const entries = [
     ...STATIC_PAGES.map((p) => urlEntry(`${FRONTEND_BASE_URL}${p.path}`, p)),
+    ...seasonalPaths.map((p) =>
+      urlEntry(`${FRONTEND_BASE_URL}${p}`, { changefreq: "weekly", priority: "0.8" }),
+    ),
     ...categories.map((c) =>
       urlEntry(`${FRONTEND_BASE_URL}/collections/${c.vstitch_category_id}`, {
         changefreq: "weekly",
