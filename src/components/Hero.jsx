@@ -17,7 +17,6 @@ import { getCategoryTone, getCategoryQuote } from "../utils/categoryTheme";
 import { formatDisplayName } from "../utils/formatName";
 import { resolveVideoForCategory } from "../utils/categoryVideo";
 import { featuredInfluencerReel as reel } from "../data/marketing";
-import InfluencerReel from "./InfluencerReel";
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
@@ -36,6 +35,23 @@ export default function Hero() {
   // back on automatically without overriding an explicit user choice.
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const videoRef = useRef(null);
+  // Blurred full-bleed copy of the (vertical) influencer reel behind the
+  // sharp one on wide screens - kept in step with play/pause below.
+  const reelBackdropRef = useRef(null);
+  // The reel's MP4 is optional (see featuredInfluencerReel.heroVideo). If it
+  // is missing or can't play, the hero quietly drops that slide.
+  const [reelFailed, setReelFailed] = useState(false);
+  // The blurred backdrop is only needed (and only downloaded) on wide
+  // screens; on a portrait phone the reel already fills the hero.
+  const [wideScreen, setWideScreen] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
+  );
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px)");
+    const update = () => setWideScreen(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const muteButtonRef = useRef(null);
 
   const { categories } = useCategories();
@@ -61,10 +77,27 @@ export default function Hero() {
     applyReducedMotionPreference();
   }, []);
 
-  const slideCount = categories.length;
+  // The featured influencer reel (when its video exists) is the first
+  // slide, ahead of one slide per category.
+  const slides = [
+    ...(reel?.heroVideo && !reelFailed ? [{ kind: "reel", key: `reel-${reel.id}`, label: reel.title }] : []),
+    ...categories.map((c) => ({
+      kind: "category",
+      key: c.vstitch_category_id,
+      label: c.category_name,
+      category: c,
+    })),
+  ];
+  const slideCount = slides.length;
   const activeIndex = slideCount > 0 ? index % slideCount : 0;
-  const category = slideCount > 0 ? categories[activeIndex] : null;
-  const videoSrc = category ? resolveVideoForCategory(category.category_name) : null;
+  const slide = slideCount > 0 ? slides[activeIndex] : null;
+  const isReel = slide?.kind === "reel";
+  const category = slide?.kind === "category" ? slide.category : null;
+  const videoSrc = isReel
+    ? reel.heroVideo
+    : category
+      ? resolveVideoForCategory(category.category_name)
+      : null;
 
   const goTo = (i) => {
     if (slideCount === 0) return;
@@ -85,8 +118,10 @@ export default function Hero() {
     video.muted = muted;
     if (!playing) {
       video.pause();
+      reelBackdropRef.current?.pause();
       return;
     }
+    reelBackdropRef.current?.play().catch(() => {});
     video.play().catch(() => {
       // The browser refused unmuted autoplay (no page interaction yet) -
       // fall back to muted so the hero still animates instead of freezing
@@ -145,7 +180,38 @@ export default function Hero() {
       className="group relative h-[92svh] min-h-[600px] overflow-hidden bg-ink text-cream"
     >
       <div className="absolute inset-0">
-        {videoSrc ? (
+        {isReel ? (
+          <>
+            {/* Wide screens: a blurred, cropped copy fills the frame and the
+                sharp vertical reel plays full-height on top. Phones are
+                portrait, so the reel simply fills the hero. */}
+            {wideScreen && (
+            <video
+              key={`${slide.key}-backdrop`}
+              ref={reelBackdropRef}
+              src={videoSrc}
+              autoPlay={!reducedMotion}
+              muted
+              loop
+              playsInline
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl"
+            />
+            )}
+            <video
+              key={`${activeIndex}-${videoSrc}`}
+              ref={videoRef}
+              src={videoSrc}
+              poster={reel.poster ?? undefined}
+              autoPlay={!reducedMotion}
+              muted={muted}
+              playsInline
+              onEnded={handleVideoEnded}
+              onError={() => setReelFailed(true)}
+              className="relative h-full w-full object-cover md:object-contain md:object-[78%_50%]"
+            />
+          </>
+        ) : videoSrc ? (
           <video
             key={`${activeIndex}-${videoSrc}`}
             ref={videoRef}
@@ -167,81 +233,58 @@ export default function Hero() {
         <div className="absolute inset-0 bg-ink/20" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center justify-between gap-10 px-5 sm:px-8 lg:px-16">
-        <div className="flex flex-col">
+      <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-center px-5 sm:px-8">
         <div key={activeIndex} className="max-w-xl">
           <p className="animate-fade-up font-sans text-xs font-medium tracking-[0.4em] text-gold-light uppercase">
-            {eyebrow}
+            {isReel ? reel.eyebrow : eyebrow}
           </p>
           <h1
             className="animate-fade-up mt-5 font-display text-5xl leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
             style={{ animationDelay: "80ms" }}
           >
-            Shop <span className="italic text-gold-light">{category.category_name}</span>
+            {isReel ? (
+              <>
+                VStitch <span className="italic text-gold-light">× @{reel.creatorHandle}</span>
+              </>
+            ) : (
+              <>
+                Shop <span className="italic text-gold-light">{category.category_name}</span>
+              </>
+            )}
           </h1>
           <p
             className="animate-fade-up mt-6 max-w-lg text-base font-light text-cream/85 sm:text-lg"
             style={{ animationDelay: "160ms" }}
           >
-            {getCategoryQuote(category.category_name)}
+            {isReel ? reel.copy : getCategoryQuote(category.category_name)}
           </p>
           <div
             className="animate-fade-up mt-10 flex flex-wrap items-center gap-4"
             style={{ animationDelay: "240ms" }}
           >
             <Link
-              to={`/collections/${category.vstitch_category_id}`}
+              to={isReel ? reel.shopHref : `/collections/${category.vstitch_category_id}`}
               className="inline-flex items-center gap-2 bg-gold px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-gold-light"
             >
-              Shop {category.category_name}
+              {isReel ? reel.shopLabel : `Shop ${category.category_name}`}
             </Link>
-            <a
-              href="#bestsellers"
-              className="inline-flex items-center gap-2 border border-cream/50 px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-cream/10"
-            >
-              {bestSellerLabel}
-            </a>
+            {isReel ? (
+              <Link
+                to="/influencers"
+                className="inline-flex items-center gap-2 border border-cream/50 px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-cream/10"
+              >
+                More Collaborations
+              </Link>
+            ) : (
+              <a
+                href="#bestsellers"
+                className="inline-flex items-center gap-2 border border-cream/50 px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-cream/10"
+              >
+                {bestSellerLabel}
+              </a>
+            )}
           </div>
         </div>
-
-        {/* Phones/tablets: a full reel would swallow the hero, so the
-            featured collab is a compact link to /influencers instead. */}
-        {reel && (
-          <Link
-            to="/influencers"
-            className="animate-fade-up mt-8 inline-flex w-fit items-center gap-3 rounded-full border border-cream/30 bg-ink/40 py-2 pl-2 pr-5 backdrop-blur-sm transition-colors hover:bg-ink/60 lg:hidden"
-            style={{ animationDelay: "320ms" }}
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold text-ink">
-              <PlayIcon width="14" height="14" />
-            </span>
-            <span className="flex flex-col text-left">
-              <span className="text-[10px] font-medium tracking-[0.25em] text-gold-light uppercase">
-                {reel.eyebrow}
-              </span>
-              <span className="text-sm text-cream">Watch {reel.title}</span>
-            </span>
-          </Link>
-        )}
-        </div>
-
-        {/* Desktop: the featured influencer reel, playable right in the hero.
-            Outside the per-slide key so it doesn't reload on every slide. */}
-        {reel && (
-          <aside className="hidden w-[300px] shrink-0 lg:block">
-            <p className="mb-3 flex items-center gap-2 text-[11px] font-medium tracking-[0.3em] text-gold-light uppercase">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-gold-light" aria-hidden="true" />
-              {reel.eyebrow}
-            </p>
-            <InfluencerReel reel={reel} iframeClassName="h-[540px]" />
-            <Link
-              to="/influencers"
-              className="link-underline mt-3 inline-block text-xs font-medium tracking-[0.2em] text-cream/80 uppercase hover:text-cream"
-            >
-              More collaborations
-            </Link>
-          </aside>
-        )}
       </div>
 
       {slideCount > 1 && (
@@ -268,11 +311,11 @@ export default function Hero() {
       <div className="absolute inset-x-0 bottom-8 z-10 flex items-center justify-center gap-4">
         {slideCount > 1 && (
           <div className="flex items-center gap-2">
-            {categories.map((cat, i) => (
+            {slides.map((s, i) => (
               <button
-                key={cat.vstitch_category_id}
+                key={s.key}
                 type="button"
-                aria-label={`Go to slide ${i + 1}: ${cat.category_name}`}
+                aria-label={`Go to slide ${i + 1}: ${s.label}`}
                 aria-current={i === activeIndex}
                 onClick={() => goTo(i)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${

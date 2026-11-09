@@ -34,12 +34,15 @@ export const instagramTiles = [
   { id: "ig5", tone: "from-[#1c3a52] to-[#08151f]", video: "/static/instagram/v5.mp4" },
 ];
 
-// Influencer collaboration reels: listed on /influencers (newest first) and
-// the `featured` one is shown in the home-page hero. Add a new collab by
-// adding an entry at the top. Instagram doesn't allow embedded reels to
-// autoplay, so cards use the official embed (tap to play) - unless `video`
-// is set to a self-hosted MP4 of the reel (e.g. /static/collab/reel.mp4,
-// with the creator's permission), which autoplays muted with a sound toggle.
+// Influencer collaboration reels: listed on /influencers (newest first);
+// the `featured` one is also the first slide of the home-page hero.
+//
+// `heroVideo` / `video` point at a self-hosted MP4 of the reel (download it
+// from Instagram - VStitch is a collaborator on the post - or get it from
+// the creator) placed under public/static/influencers/. The hero plays it
+// full-bleed; the /influencers card autoplays it muted with a sound toggle.
+// Until the file exists, the hero skips the reel slide and the card falls
+// back to Instagram's embed (tap to play), so nothing looks broken.
 export const influencerReels = [
   {
     id: "justpoooja-2026",
@@ -52,7 +55,8 @@ export const influencerReels = [
     copy: "Watch @justpoooja bring VStitch by Anjali Nanda to life in our newest collaboration - handcrafted pieces, styled her way.",
     shopHref: "/collections",
     shopLabel: "Shop the Collection",
-    video: null,
+    heroVideo: "/static/influencers/justpoooja-reel.mp4",
+    video: "/static/influencers/justpoooja-reel.mp4",
     poster: null,
   },
 ];

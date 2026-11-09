@@ -8,10 +8,12 @@ import { InstagramIcon, VolumeOffIcon, VolumeOnIcon } from "./Icons";
 export default function InfluencerReel({ reel, iframeClassName = "h-[620px] sm:h-[640px]" }) {
   const videoRef = useRef(null);
   const [muted, setMuted] = useState(true);
+  // Missing/unplayable MP4 -> fall back to the Instagram embed below.
+  const [videoFailed, setVideoFailed] = useState(false);
 
   // Self-hosted copy: autoplays muted (browsers only allow muted autoplay),
   // with a button to turn the sound on.
-  if (reel.video) {
+  if (reel.video && !videoFailed) {
     const toggleSound = () => {
       const video = videoRef.current;
       if (!video) return;
@@ -31,6 +33,7 @@ export default function InfluencerReel({ reel, iframeClassName = "h-[620px] sm:h
           loop
           playsInline
           preload="metadata"
+          onError={() => setVideoFailed(true)}
           className="h-full w-full object-cover"
         />
         <button
