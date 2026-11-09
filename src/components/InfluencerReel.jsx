@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { featuredReel as reel } from "../data/marketing";
 import { InstagramIcon, VolumeOffIcon, VolumeOnIcon } from "./Icons";
 
-// Home-page spotlight for an influencer collab reel. Content lives in
-// data/marketing.js (featuredReel) so the next launch is a data change only.
-function ReelMedia() {
+// One influencer collab reel (see influencerReels in data/marketing.js),
+// used by the home-page hero and the /influencers page. `iframeClassName`
+// sets the embed's height, since Instagram's embed doesn't size itself
+// without their script.
+export default function InfluencerReel({ reel, iframeClassName = "h-[620px] sm:h-[640px]" }) {
   const videoRef = useRef(null);
   const [muted, setMuted] = useState(true);
 
@@ -64,48 +64,8 @@ function ReelMedia() {
         scrolling="no"
         allow="autoplay; encrypted-media; picture-in-picture; clipboard-write"
         allowFullScreen
-        className="block h-[620px] w-full sm:h-[640px]"
+        className={`block w-full ${iframeClassName}`}
       />
     </div>
-  );
-}
-
-export default function FeaturedReel() {
-  if (!reel?.enabled) return null;
-
-  return (
-    <section className="bg-sand/40">
-      <div className="mx-auto grid max-w-5xl items-center gap-12 px-5 py-20 sm:px-8 md:grid-cols-[1fr_340px] md:gap-16 lg:py-24">
-        <div data-reveal className="reveal order-2 text-center md:order-1 md:text-left">
-          <span className="inline-flex items-center gap-2 font-sans text-xs font-medium tracking-[0.3em] text-gold uppercase">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-gold" aria-hidden="true" />
-            {reel.eyebrow}
-          </span>
-          <h2 className="mt-4 font-display text-4xl text-ink sm:text-5xl">{reel.title}</h2>
-          <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-charcoal/75 md:mx-0">{reel.copy}</p>
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
-            <Link
-              to={reel.shopHref}
-              className="bg-ink px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-cream uppercase transition-colors hover:bg-charcoal"
-            >
-              {reel.shopLabel}
-            </Link>
-            <a
-              href={reel.reelUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 border border-ink px-8 py-3.5 text-sm font-medium tracking-[0.14em] text-ink uppercase transition-colors hover:bg-ink hover:text-cream"
-            >
-              <InstagramIcon width="16" height="16" />
-              Watch on Instagram
-            </a>
-          </div>
-        </div>
-
-        <div data-reveal className="reveal order-1 mx-auto w-full max-w-[340px] md:order-2">
-          <ReelMedia />
-        </div>
-      </div>
-    </section>
   );
 }

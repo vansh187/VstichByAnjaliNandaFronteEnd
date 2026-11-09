@@ -34,22 +34,27 @@ export const instagramTiles = [
   { id: "ig5", tone: "from-[#1c3a52] to-[#08151f]", video: "/static/instagram/v5.mp4" },
 ];
 
-// Featured collab reel on the home page (FeaturedReel). Swap these fields
-// for the next launch. Instagram doesn't allow embedded reels to autoplay,
-// so the card shows the official embed (tap to play) - unless `video` is
-// set to a self-hosted MP4 of the reel (e.g. /static/collab/reel.mp4, with
-// the creator's permission), in which case it autoplays muted with a
-// tap-to-unmute button. Set `enabled: false` to hide the section.
-export const featuredReel = {
-  enabled: true,
-  reelUrl: "https://www.instagram.com/reel/DffGKH5B-4G/",
-  embedUrl: "https://www.instagram.com/reel/DffGKH5B-4G/embed/",
-  creatorHandle: "justpoooja",
-  eyebrow: "Just Launched · Collaboration",
-  title: "VStitch × @justpoooja",
-  copy: "Watch @justpoooja bring VStitch by Anjali Nanda to life in our newest collaboration - handcrafted pieces, styled her way.",
-  shopHref: "/collections",
-  shopLabel: "Shop the Collection",
-  video: null,
-  poster: null,
-};
+// Influencer collaboration reels: listed on /influencers (newest first) and
+// the `featured` one is shown in the home-page hero. Add a new collab by
+// adding an entry at the top. Instagram doesn't allow embedded reels to
+// autoplay, so cards use the official embed (tap to play) - unless `video`
+// is set to a self-hosted MP4 of the reel (e.g. /static/collab/reel.mp4,
+// with the creator's permission), which autoplays muted with a sound toggle.
+export const influencerReels = [
+  {
+    id: "justpoooja-2026",
+    featured: true,
+    creatorHandle: "justpoooja",
+    reelUrl: "https://www.instagram.com/reel/DffGKH5B-4G/",
+    embedUrl: "https://www.instagram.com/reel/DffGKH5B-4G/embed/",
+    eyebrow: "Just Launched · Collaboration",
+    title: "VStitch × @justpoooja",
+    copy: "Watch @justpoooja bring VStitch by Anjali Nanda to life in our newest collaboration - handcrafted pieces, styled her way.",
+    shopHref: "/collections",
+    shopLabel: "Shop the Collection",
+    video: null,
+    poster: null,
+  },
+];
+
+export const featuredInfluencerReel = influencerReels.find((r) => r.featured) ?? null;

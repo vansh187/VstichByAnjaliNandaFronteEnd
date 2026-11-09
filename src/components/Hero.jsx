@@ -16,6 +16,8 @@ import { QUALIFYING_THRESHOLD } from "./Bestsellers";
 import { getCategoryTone, getCategoryQuote } from "../utils/categoryTheme";
 import { formatDisplayName } from "../utils/formatName";
 import { resolveVideoForCategory } from "../utils/categoryVideo";
+import { featuredInfluencerReel as reel } from "../data/marketing";
+import InfluencerReel from "./InfluencerReel";
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
@@ -165,7 +167,8 @@ export default function Hero() {
         <div className="absolute inset-0 bg-ink/20" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-center px-5 sm:px-8">
+      <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center justify-between gap-10 px-5 sm:px-8 lg:px-16">
+        <div className="flex flex-col">
         <div key={activeIndex} className="max-w-xl">
           <p className="animate-fade-up font-sans text-xs font-medium tracking-[0.4em] text-gold-light uppercase">
             {eyebrow}
@@ -200,6 +203,45 @@ export default function Hero() {
             </a>
           </div>
         </div>
+
+        {/* Phones/tablets: a full reel would swallow the hero, so the
+            featured collab is a compact link to /influencers instead. */}
+        {reel && (
+          <Link
+            to="/influencers"
+            className="animate-fade-up mt-8 inline-flex w-fit items-center gap-3 rounded-full border border-cream/30 bg-ink/40 py-2 pl-2 pr-5 backdrop-blur-sm transition-colors hover:bg-ink/60 lg:hidden"
+            style={{ animationDelay: "320ms" }}
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold text-ink">
+              <PlayIcon width="14" height="14" />
+            </span>
+            <span className="flex flex-col text-left">
+              <span className="text-[10px] font-medium tracking-[0.25em] text-gold-light uppercase">
+                {reel.eyebrow}
+              </span>
+              <span className="text-sm text-cream">Watch {reel.title}</span>
+            </span>
+          </Link>
+        )}
+        </div>
+
+        {/* Desktop: the featured influencer reel, playable right in the hero.
+            Outside the per-slide key so it doesn't reload on every slide. */}
+        {reel && (
+          <aside className="hidden w-[300px] shrink-0 lg:block">
+            <p className="mb-3 flex items-center gap-2 text-[11px] font-medium tracking-[0.3em] text-gold-light uppercase">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-gold-light" aria-hidden="true" />
+              {reel.eyebrow}
+            </p>
+            <InfluencerReel reel={reel} iframeClassName="h-[540px]" />
+            <Link
+              to="/influencers"
+              className="link-underline mt-3 inline-block text-xs font-medium tracking-[0.2em] text-cream/80 uppercase hover:text-cream"
+            >
+              More collaborations
+            </Link>
+          </aside>
+        )}
       </div>
 
       {slideCount > 1 && (

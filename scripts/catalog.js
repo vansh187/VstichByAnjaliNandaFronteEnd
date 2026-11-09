@@ -12,6 +12,7 @@ export const STATIC_PAGES = [
   // other seasonal edit (e.g. /festive-luxe) comes from GET /collections.
   { path: "/summer-luxe", changefreq: "weekly", priority: "0.8" },
   { path: "/collections", changefreq: "weekly", priority: "0.8" },
+  { path: "/influencers", changefreq: "weekly", priority: "0.6" },
   { path: "/our-story", changefreq: "monthly", priority: "0.5" },
   { path: "/faqs", changefreq: "monthly", priority: "0.5" },
 ];

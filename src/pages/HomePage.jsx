@@ -4,7 +4,6 @@ import { FRONTEND_BASE_URL } from "../lib/apiConfig";
 import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
-import FeaturedReel from "../components/FeaturedReel";
 import Categories from "../components/Categories";
 import Bestsellers from "../components/Bestsellers";
 import Features from "../components/Features";
@@ -47,7 +46,6 @@ export default function HomePage() {
       <Navbar />
       <main>
         <Hero />
-        <FeaturedReel />
         <Categories />
         <Bestsellers />
         <Features />
