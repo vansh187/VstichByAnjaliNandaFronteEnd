@@ -17,6 +17,7 @@ import { withBrandPrefix } from "../utils/categoryVideo";
 // seasonal edits and collections without a desktop-style hover flyout.
 const navLinks = [
   { label: "Home", href: "/" },
+  { label: "Influencers", href: "/influencers" },
   { label: "Our Story", href: "/our-story" },
 ];
 
@@ -278,7 +279,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-end gap-6 lg:flex lg:ml-8">
+        <nav className="hidden flex-1 items-center justify-end gap-4 whitespace-nowrap lg:flex lg:ml-8 xl:gap-6">
           <Link
             to="/"
             className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
@@ -287,6 +288,12 @@ export default function Navbar() {
           </Link>
           <SeasonsNavItem />
           <CollectionsNavItem />
+          <Link
+            to="/influencers"
+            className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
+          >
+            Influencers
+          </Link>
           <Link
             to="/our-story"
             className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"

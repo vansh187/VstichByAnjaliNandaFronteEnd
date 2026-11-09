@@ -6,6 +6,7 @@ import AuthModal from "./pages/AuthModal";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import HomePage from "./pages/HomePage";
 import SeasonalCollectionPage from "./pages/SeasonalCollectionPage";
+import InfluencersPage from "./pages/InfluencersPage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionPage from "./pages/CollectionPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
@@ -85,6 +86,7 @@ function App() {
             remounts into a clean useProducts state, same reasoning as
             CollectionPage above */}
         <Route path="/search" element={<SearchResultsPage key={location.search} />} />
+        <Route path="/influencers" element={<InfluencersPage />} />
         <Route path="/our-story" element={<StoryPage />} />
         <Route path="/faqs" element={<FaqPage />} />
         <Route
