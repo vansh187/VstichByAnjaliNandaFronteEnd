@@ -17,7 +17,7 @@ import { withBrandPrefix } from "../utils/categoryVideo";
 // seasonal edits and collections without a desktop-style hover flyout.
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Influencers", href: "/influencers" },
+  { label: "Influencers Wall", href: "/influencers" },
   { label: "Our Story", href: "/our-story" },
 ];
 
@@ -258,7 +258,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-5 py-4 sm:px-8">
         <button
           type="button"
-          className="flex items-center gap-2 text-ink lg:hidden"
+          className="flex items-center gap-2 text-ink xl:hidden"
           aria-label="Open menu"
           onClick={() => setMobileOpen(true)}
         >
@@ -279,7 +279,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-end gap-4 whitespace-nowrap lg:flex lg:ml-8 xl:gap-6">
+        <nav className="hidden flex-1 items-center justify-end gap-6 whitespace-nowrap xl:ml-8 xl:flex">
           <Link
             to="/"
             className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
@@ -292,7 +292,7 @@ export default function Navbar() {
             to="/influencers"
             className="link-underline font-sans text-[13px] font-medium tracking-[0.14em] text-charcoal uppercase"
           >
-            Influencers
+            Influencers Wall
           </Link>
           <Link
             to="/our-story"
@@ -377,7 +377,7 @@ export default function Navbar() {
           the top of the backdrop scrim (visible on phone + tablet). */}
       {createPortal(
       <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-50 transition-opacity duration-300 xl:hidden ${
           mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-hidden={!mobileOpen}
