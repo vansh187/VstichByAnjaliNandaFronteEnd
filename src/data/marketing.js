@@ -33,3 +33,23 @@ export const instagramTiles = [
   { id: "ig4", tone: "from-[#5a2f6b] to-[#1f0f2b]", video: "/static/instagram/v4.mp4" },
   { id: "ig5", tone: "from-[#1c3a52] to-[#08151f]", video: "/static/instagram/v5.mp4" },
 ];
+
+// Featured collab reel on the home page (FeaturedReel). Swap these fields
+// for the next launch. Instagram doesn't allow embedded reels to autoplay,
+// so the card shows the official embed (tap to play) - unless `video` is
+// set to a self-hosted MP4 of the reel (e.g. /static/collab/reel.mp4, with
+// the creator's permission), in which case it autoplays muted with a
+// tap-to-unmute button. Set `enabled: false` to hide the section.
+export const featuredReel = {
+  enabled: true,
+  reelUrl: "https://www.instagram.com/reel/DffGKH5B-4G/",
+  embedUrl: "https://www.instagram.com/reel/DffGKH5B-4G/embed/",
+  creatorHandle: "justpoooja",
+  eyebrow: "Just Launched · Collaboration",
+  title: "VStitch × @justpoooja",
+  copy: "Watch @justpoooja bring VStitch by Anjali Nanda to life in our newest collaboration - handcrafted pieces, styled her way.",
+  shopHref: "/collections",
+  shopLabel: "Shop the Collection",
+  video: null,
+  poster: null,
+};
