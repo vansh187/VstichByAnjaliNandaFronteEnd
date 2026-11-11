@@ -49,8 +49,9 @@ export const instagramTiles = [
 // "Watch on Instagram" tile; the hero skips a featured reel whose MP4 fails.
 //
 // `onProductPages: true` also shows the reel on product detail pages
-// ("Styled by Creators", below the product). Limit it to specific products
-// with `productIds: [12, 34]`; leave it empty to show it on every product.
+// ("Styled by Creators", below the product). `productIds: [12, 34]` ties it
+// to those products; leave it empty to show it on every product. A product
+// with reels tied to it shows only those, not the every-product ones.
 const MEDIA = "/static/influencers";
 
 export const influencerReels = [
@@ -65,6 +66,9 @@ export const influencerReels = [
     shopLabel: "Shop the Collection",
     video: `${MEDIA}/forevergorgeousbypoojapal-reel.mp4`,
     poster: `${MEDIA}/forevergorgeousbypoojapal-reel.jpg`,
+    onProductPages: true,
+    // Chocolate Brown & Ivory Floral Embroidered Kurta Set
+    productIds: [111],
   },
   {
     id: "itsmuskaansachdeva-dilruba-2026",
@@ -92,6 +96,9 @@ export const influencerReels = [
     heroVideo: `${MEDIA}/justpoooja-reel.mp4`,
     video: `${MEDIA}/justpoooja-reel.mp4`,
     poster: `${MEDIA}/justpoooja-reel.jpg`,
+    onProductPages: true,
+    // Pastel Mint Green Embroidered Suit Set with Blush Pink Dupatta
+    productIds: [110],
   },
   {
     id: "itsmuskaansachdeva-diwali-2026",
@@ -111,9 +118,10 @@ export const influencerReels = [
 
 export const featuredInfluencerReel = influencerReels.find((r) => r.featured) ?? null;
 
-// Reels to show on a given product's detail page.
+// Reels to show on a given product's detail page: the ones tied to this
+// product if there are any, otherwise the every-product ones.
 export function reelsForProduct(productId) {
-  return influencerReels.filter(
-    (r) => r.onProductPages && (!r.productIds?.length || r.productIds.includes(productId)),
-  );
+  const onPages = influencerReels.filter((r) => r.onProductPages);
+  const tied = onPages.filter((r) => r.productIds?.includes(productId));
+  return tied.length ? tied : onPages.filter((r) => !r.productIds?.length);
 }
