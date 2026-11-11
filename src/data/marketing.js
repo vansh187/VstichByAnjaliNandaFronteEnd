@@ -37,28 +37,83 @@ export const instagramTiles = [
 // Influencer collaboration reels: listed on /influencers (newest first);
 // the `featured` one is also the first slide of the home-page hero.
 //
-// `heroVideo` / `video` point at a self-hosted MP4 of the reel (download it
-// from Instagram - VStitch is a collaborator on the post - or get it from
-// the creator) placed under public/static/influencers/. The hero plays it
-// full-bleed; the /influencers card autoplays it muted with a sound toggle.
-// Until the file exists, the hero skips the reel slide and the card falls
-// back to Instagram's embed (tap to play), so nothing looks broken.
+// Media is self-hosted under public/static/influencers/ (downloaded from the
+// public posts - VStitch is credited on each - or got from the creator):
+//   video   MP4 of the reel. Cards play it on hover (tap on phones); the
+//           hero plays `heroVideo` full-bleed.
+//   poster  still shown until the card is hovered (also lets the MP4 load
+//           only on hover).
+//   images  photos of a carousel post, cycled on hover instead of a video.
+// Instagram's own embeds can't be used: Instagram now refuses to be shown
+// inside other sites (X-Frame-Options: DENY). A card with no media shows a
+// "Watch on Instagram" tile; the hero skips a featured reel whose MP4 fails.
+//
+// `onProductPages: true` also shows the reel on product detail pages
+// ("Styled by Creators", below the product). Limit it to specific products
+// with `productIds: [12, 34]`; leave it empty to show it on every product.
+const MEDIA = "/static/influencers";
+
 export const influencerReels = [
+  {
+    id: "forevergorgeousbypoojapal-2026",
+    creatorHandle: "forevergorgeousbypoojapal",
+    reelUrl: "https://www.instagram.com/reel/DfmFsNNANg4/",
+    eyebrow: "Shaadi Preps · Collaboration",
+    title: "VStitch × @forevergorgeousbypoojapal",
+    copy: "Delhi makeup artist @forevergorgeousbypoojapal gets shaadi-ready in VStitch by Anjali Nanda - handcrafted pieces, styled her way.",
+    shopHref: "/collections",
+    shopLabel: "Shop the Collection",
+    video: `${MEDIA}/forevergorgeousbypoojapal-reel.mp4`,
+    poster: `${MEDIA}/forevergorgeousbypoojapal-reel.jpg`,
+  },
+  {
+    id: "itsmuskaansachdeva-dilruba-2026",
+    creatorHandle: "itsmuskaansachdeva",
+    reelUrl: "https://www.instagram.com/p/DfkeA7TGc5i/",
+    eyebrow: "Dilruba · Collaboration",
+    title: "VStitch × @itsmuskaansachdeva",
+    copy: "\"She literally brought my vision to life.\" @itsmuskaansachdeva in her Dilruba look - designed with her, handcrafted by VStitch by Anjali Nanda.",
+    shopHref: "/collections",
+    shopLabel: "Shop the Collection",
+    video: null,
+    images: [1, 2, 3, 4, 5, 6].map((n) => `${MEDIA}/itsmuskaansachdeva-dilruba-${n}.jpg`),
+    poster: null,
+  },
   {
     id: "justpoooja-2026",
     featured: true,
     creatorHandle: "justpoooja",
     reelUrl: "https://www.instagram.com/reel/DffGKH5B-4G/",
-    embedUrl: "https://www.instagram.com/reel/DffGKH5B-4G/embed/",
     eyebrow: "Just Launched · Collaboration",
     title: "VStitch × @justpoooja",
     copy: "Watch @justpoooja bring VStitch by Anjali Nanda to life in our newest collaboration - handcrafted pieces, styled her way.",
     shopHref: "/collections",
     shopLabel: "Shop the Collection",
-    heroVideo: "/static/influencers/justpoooja-reel.mp4",
-    video: "/static/influencers/justpoooja-reel.mp4",
-    poster: null,
+    heroVideo: `${MEDIA}/justpoooja-reel.mp4`,
+    video: `${MEDIA}/justpoooja-reel.mp4`,
+    poster: `${MEDIA}/justpoooja-reel.jpg`,
+  },
+  {
+    id: "itsmuskaansachdeva-diwali-2026",
+    creatorHandle: "itsmuskaansachdeva",
+    reelUrl: "https://www.instagram.com/reel/DfcHEH-Oqx4/",
+    eyebrow: "Diwali 2026 · Collaboration",
+    title: "VStitch × @itsmuskaansachdeva",
+    copy: "@itsmuskaansachdeva celebrates Diwali 2026 in a VStitch by Anjali Nanda suit - festive, handcrafted and made to fit.",
+    shopHref: "/collections",
+    shopLabel: "Shop the Collection",
+    video: `${MEDIA}/itsmuskaansachdeva-diwali-reel.mp4`,
+    poster: `${MEDIA}/itsmuskaansachdeva-diwali-reel.jpg`,
+    onProductPages: true,
+    productIds: [],
   },
 ];
 
 export const featuredInfluencerReel = influencerReels.find((r) => r.featured) ?? null;
+
+// Reels to show on a given product's detail page.
+export function reelsForProduct(productId) {
+  return influencerReels.filter(
+    (r) => r.onProductPages && (!r.productIds?.length || r.productIds.includes(productId)),
+  );
+}
