@@ -9,12 +9,14 @@ import SizeGuideModal from "../components/SizeGuideModal";
 import CustomizationModal from "../components/CustomizationModal";
 import FabricCustomizationModal from "../components/FabricCustomizationModal";
 import WishlistButton from "../components/WishlistButton";
+import InfluencerReel from "../components/InfluencerReel";
 import {
   BagIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckCircleIcon,
   CloseIcon,
+  InstagramIcon,
   MinusIcon,
   PlusIcon,
   WhatsappGlyphIcon,
@@ -31,6 +33,7 @@ import { formatINR, isFabricCategory, withPriceUnit } from "../utils/format";
 import { colorToHex } from "../utils/colorSwatch";
 import { getCategoryTone } from "../utils/categoryTheme";
 import { sortSizes } from "../utils/variants";
+import { reelsForProduct } from "../data/marketing";
 
 // Custom-fit requests are keyed by variant id and persisted here so the
 // "Custom" badge and the entered measurements survive a page reload — the
@@ -109,6 +112,8 @@ export default function ProductDetailPage() {
   // Fabrics are sold for custom dresses, not through the cart - they swap the
   // size/quantity/Add to Cart controls for a WhatsApp customization request.
   const isFabric = isFabricCategory(detail?.category_name);
+  // Influencer reels flagged for product pages (see influencerReels).
+  const creatorReels = useMemo(() => reelsForProduct(productId), [productId]);
 
   const closeLightbox = () => setLightboxOpen(false);
   useOverlay(lightboxOpen, closeLightbox);
@@ -698,6 +703,39 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             </div>
+
+            {creatorReels.length > 0 && (
+              <section className="mt-20 border-t border-sand-dark/70 pt-14">
+                <div className="text-center">
+                  <p className="font-sans text-[11px] font-medium tracking-[0.4em] text-gold uppercase">
+                    The Creator Edit
+                  </p>
+                  <h2 className="mt-3 font-display text-3xl text-ink sm:text-4xl">
+                    Styled by <span className="italic text-gold">Creators</span>
+                  </h2>
+                </div>
+                <div className="mt-10 flex flex-wrap justify-center gap-10">
+                  {creatorReels.map((reel) => (
+                    <div key={reel.id} className="w-full max-w-[340px]">
+                      <InfluencerReel reel={reel} />
+                      <a
+                        href={reel.reelUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 flex items-center justify-center gap-2 text-xs font-medium tracking-[0.2em] text-ink uppercase hover:text-gold"
+                      >
+                        <InstagramIcon width="15" height="15" />@{reel.creatorHandle}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8 text-center">
+                  <Link to="/influencers" className="link-underline text-xs font-medium tracking-[0.2em] text-ink uppercase">
+                    More Collaborations
+                  </Link>
+                </div>
+              </section>
+            )}
           </>
         )}
       </main>
