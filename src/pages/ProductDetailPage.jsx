@@ -9,7 +9,7 @@ import SizeGuideModal from "../components/SizeGuideModal";
 import CustomizationModal from "../components/CustomizationModal";
 import FabricCustomizationModal from "../components/FabricCustomizationModal";
 import WishlistButton from "../components/WishlistButton";
-import InfluencerReel from "../components/InfluencerReel";
+import InfluencerReel, { REEL_FIT_WIDTH } from "../components/InfluencerReel";
 import {
   BagIcon,
   ChevronLeftIcon,
@@ -716,7 +716,7 @@ export default function ProductDetailPage() {
                 </div>
                 <div className="mt-10 flex flex-wrap justify-center gap-10">
                   {creatorReels.map((reel) => (
-                    <div key={reel.id} className="w-full max-w-[340px]">
+                    <div key={reel.id} className={`w-full ${REEL_FIT_WIDTH}`}>
                       <InfluencerReel reel={reel} />
                       <a
                         href={reel.reelUrl}
