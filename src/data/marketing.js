@@ -34,7 +34,8 @@ export const instagramTiles = [
   { id: "ig5", tone: "from-[#1c3a52] to-[#08151f]", video: "/static/instagram/v5.mp4" },
 ];
 
-// Influencer collaboration reels: listed on /influencers (newest first);
+// Influencer collaboration reels: listed on /influencers in this order as
+// "Chapter 01, 02, ..." (add new ones at the end so chapter numbers stay put);
 // the `featured` one is also the first slide of the home-page hero.
 //
 // Media is self-hosted under public/static/influencers/ (downloaded from the
@@ -113,6 +114,18 @@ export const influencerReels = [
     poster: `${MEDIA}/itsmuskaansachdeva-diwali-reel.jpg`,
     onProductPages: true,
     productIds: [],
+  },
+  {
+    id: "mehaarbakshhi-diwali-2026",
+    creatorHandle: "mehaarbakshhi.dietin",
+    reelUrl: "https://www.instagram.com/reel/DffjdP8TLSy/",
+    eyebrow: "Diwali 2026 · Collaboration",
+    title: "VStitch × @mehaarbakshhi.dietin",
+    copy: "\"Diwali ka patakha, outfit bhi dhamaka!\" @mehaarbakshhi.dietin lights up Diwali in VStitch by Anjali Nanda - festive colour, handcrafted detail.",
+    shopHref: "/collections",
+    shopLabel: "Shop the Collection",
+    video: `${MEDIA}/mehaarbakshhi-reel.mp4`,
+    poster: `${MEDIA}/mehaarbakshhi-reel.jpg`,
   },
 ];
 

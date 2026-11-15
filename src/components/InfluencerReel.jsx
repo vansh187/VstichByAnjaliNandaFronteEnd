@@ -3,6 +3,12 @@ import { InstagramIcon, PlayIcon, VolumeOffIcon, VolumeOnIcon } from "./Icons";
 
 const SLIDE_MS = 1600;
 
+// Max width for a reel tile's wrapper so the whole 9:16 tile fits on screen
+// below the sticky navbar (~5rem) with a little breathing room - nobody has
+// to scroll to see one reel. Capped at 360px on tall screens; never below
+// 200px on very short (landscape phone) ones.
+export const REEL_FIT_WIDTH = "max-w-[max(200px,min(360px,calc((100svh_-_7rem)*9/16)))]";
+
 // One influencer collab card (see influencerReels in data/marketing.js), used
 // on the /influencers page and on product detail pages.
 //

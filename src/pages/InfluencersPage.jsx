@@ -4,7 +4,7 @@ import AnnouncementBar from "../components/AnnouncementBar";
 import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import Footer from "../components/Footer";
-import InfluencerReel from "../components/InfluencerReel";
+import InfluencerReel, { REEL_FIT_WIDTH } from "../components/InfluencerReel";
 import { InstagramIcon } from "../components/Icons";
 import { useReveal } from "../hooks/useReveal";
 import { useSeo } from "../hooks/useSeo";
@@ -88,7 +88,7 @@ function CollabSpread({ reel, index }) {
 
   return (
     <article data-reveal className="reveal grid items-center gap-14 md:grid-cols-2 md:gap-20">
-      <div className={`relative mx-auto w-full max-w-[360px] ${flipped ? "md:order-2" : ""}`}>
+      <div className={`relative mx-auto w-full ${REEL_FIT_WIDTH} ${flipped ? "md:order-2" : ""}`}>
         {/* Offset gold outline behind the reel. */}
         <div
           aria-hidden="true"
